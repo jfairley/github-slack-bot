@@ -1,7 +1,8 @@
+'use strict';
 
-// create slack bot
-var Botkit = require('botkit');
-var controller = Botkit.slackbot({
+// create shared slack bot controller
+const Botkit = require('botkit');
+const controller = Botkit.slackbot({
   debug: true
 });
 
