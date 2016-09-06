@@ -4,11 +4,15 @@ if (!process.env.SLACK_BOT_TOKEN) {
   console.error('Error: Specify SLACK_BOT_TOKEN in environment');
   process.exit(1);
 }
+if (!process.env.SLACK_BOT_ID) {
+  console.error('Error: Specify SLACK_BOT_ID in environment');
+  process.exit(1);
+}
 
 
 const _ = require('lodash');
 const githubhook = require('githubhook');
-const BOT_ID = 'D1BPHEUB1';
+const BOT_ID = process.env.SLACK_BOT_ID;
 
 module.exports = controller => {
 

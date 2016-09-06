@@ -3,5 +3,6 @@ github-slack-bot:
   environment:
     - GITHUB_TOKEN
     - SLACK_BOT_TOKEN
+    - SLACK_BOT_ID
   ports:
     - "3420:3420"

@@ -27,7 +27,13 @@ docker-compose up
 
 ```bash
 docker build -t github-slack-bot .
-docker run -d --rm -p 3420:3420 -e GITHUB_TOKEN=$GITHUB_TOKEN -e SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN --name github-slack-bot github-slack-bot
+docker run -d \
+           -p 3420:3420 \
+           --env GITHUB_TOKEN=$GITHUB_TOKEN \
+           --env SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN \
+           --env SLACK_BOT_ID=$SLACK_BOT_ID \
+           --name github-slack-bot \
+           github-slack-bot
 docker logs -f github-slack-bot
 ```
 
