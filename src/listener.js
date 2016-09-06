@@ -65,7 +65,8 @@ module.exports = controller => {
         msg_attachment_title,
         msg_attachment_description = payload.body,
         pull_request_from = _.get(data, 'pull_request.head.label'),
-        pull_request_to = _.get(data, 'pull_request.base.label');
+        pull_request_to = _.get(data, 'pull_request.base.label'),
+        pull_request_mergeable_state = _.get(data, 'pull_request.mergeable_state');
 
     if (is_comment) {
       msg_text = 'You were mentioned in a comment on *' + repo + '*';
@@ -94,6 +95,20 @@ module.exports = controller => {
         return;
       }
 
+      let color;
+      switch (pull_request_mergeable_state) {
+        case 'clean':
+          color = 'good';
+          break;
+        case 'unknown':
+          color = 'warning';
+          break;
+        case 'unstable':
+        case 'dirty':
+          color = 'danger';
+          break;
+      }
+
       _.forEach(all_user_data, user => {
         if (user.github_user) {
           let github_user = '@' + user.github_user;
@@ -108,7 +123,7 @@ module.exports = controller => {
               channel: BOT_ID,
               user: user.id,
               attachments: [{
-                color: '#00aeef',
+                color: color,
                 title: msg_attachment_title,
                 title_link: link,
                 text: msg_attachment_description
