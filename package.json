@@ -1,0 +1,23 @@
+{
+  "name": "github-slack-bot",
+  "version": "0.0.1",
+  "description": "Slack bot for your team which integrates with Github",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint *.js src --fix",
+    "prestart": "npm run lint",
+    "start": "node index.js"
+  },
+  "author": "jfairley@gmail.com",
+  "license": "ISC",
+  "dependencies": {
+    "bluebird": "^3.4.6",
+    "botkit": "^0.2.2",
+    "githubhook": "^1.6.1",
+    "lodash": "^4.15.0"
+  },
+  "devDependencies": {
+    "eslint": "^3.4.0",
+    "superagent": "^2.2.0"
+  }
+}
