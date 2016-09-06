@@ -5,6 +5,7 @@ if (!process.env.GITHUB_TOKEN) {
   process.exit(1);
 }
 
+const authorization = `token ${process.env.GITHUB_TOKEN}`;
 const _ = require('lodash');
 const request = require('superagent');
 const Promise = require('bluebird');
@@ -68,9 +69,9 @@ module.exports = controller => {
   function listPRs (bot, msg, team) {
     controller.storage.users.get(team, (err, data) => {
       if (err) {
-        bot.reply(msg, 'Failed to load data', err);
-        return;
-      } else if (!data) {
+        return bot.reply(msg, 'Failed to load data', err);
+      }
+      if (!data) {
         return teamDoesNotExist(bot, msg, team);
       }
       const snippets = getSnippets(data, true);
@@ -78,31 +79,55 @@ module.exports = controller => {
         .then(body => _.values(groupByRepositoryUrl(body)))
         .map(group => filterUninterestingLinks(group, snippets))
         .filter(group => !_.isEmpty(group))
-        .map(group => {
-          return new Promise((resolve, reject) => {
-            bot.reply(msg, {
-              text: `*${group[0].repository.name}*`,
-              attachments: group.map(resp => {
-                const link = `<${resp.html_url}|${resp.title}>`;
-                const extras = [];
-                // has assignee?
-                if (_.has(resp, 'assignee.login')) {
-                  extras.push({
-                    title: 'Assignee',
-                    value: resp.assignee.login,
-                    short: true
-                  });
-                }
+        .map(group => Promise.map(group, body => {
+          if (_.has(body, 'pull_request')) {
+            return request.get(body.pull_request.url)
+              .set('Authorization', authorization)
+              .then(res => {
+                body.pull_request = res.body;
+                return body;
+              });
+          } else {
+            return body;
+          }
+        }))
+        .map(group => new Promise((resolve, reject) => {
+          bot.reply(msg, {
+            text: `*${group[0].repository.name}*`,
+            attachments: group.map(resp => {
+              const link = `<${resp.html_url}|${resp.title}>`;
+              const extras = [];
+              // has assignee?
+              if (_.has(resp, 'assignee.login')) {
+                extras.push({
+                  title: 'Assignee',
+                  value: resp.assignee.login,
+                  short: true
+                });
+              }
 
-                return {
-                  color: '#00aeef', // TODO: status color
-                  text: `${link} (${resp.user.login})`,
-                  fields: extras
-                }
-              })
-            }, err => err ? reject(err) : resolve());
-          });
-        })
+              let color;
+              switch (_.get(resp, 'pull_request.mergeable_state')) {
+                case 'clean':
+                  color = 'good';
+                  break;
+                case 'unknown':
+                  color = 'warning';
+                  break;
+                case 'unstable':
+                case 'dirty':
+                  color = 'danger';
+                  break;
+              }
+
+              return {
+                color: color,
+                text: `${link} (${resp.user.login})`,
+                fields: extras
+              }
+            })
+          }, err => err ? reject(err) : resolve());
+        }))
         .then(data => _.isEmpty(data) ? bot.reply(msg, `No matching issues!! You're in the clear.`) : data)
         .catch(err => bot.reply(msg, `Unhandled error:\n${err}`));
     });
@@ -228,8 +253,8 @@ module.exports = controller => {
       } else if (!data) {
         teamDoesNotExist(bot, msg, team);
       } else {
-        const snippets = getSnippets(data, false);
-        controller.storage.users.save({id: team, snippets: flatten(snippets, newSnippet)}, err => {
+        data.snippets = flatten(getSnippets(data, false), newSnippet);
+        controller.storage.users.save(data, err => {
           if (err) {
             bot.reply(msg, `Failed to add ${newSnippet}! ${err}`);
           } else {
@@ -262,8 +287,8 @@ module.exports = controller => {
       if (!data) {
         teamDoesNotExist(bot, msg, team);
       } else {
-        const snippets = getSnippets(data, false);
-        controller.storage.users.save({id: team, snippets: _.without(snippets, removedSnippet)}, err => {
+        data = _.merge(data, {snippets: _.without(getSnippets(data, false), removedSnippet)});
+        controller.storage.users.save(data, err => {
           if (err) {
             bot.reply(msg, `Failed to remove ${removedSnippet}! ${err}`);
           } else {
@@ -297,7 +322,7 @@ function getSnippets (data, withUser) {
  */
 function fetchOrgIssues () {
   return request.get('https://api.github.com/orgs/levelsbeyond/issues?filter=all')
-    .set('Authorization', `token ${process.env.GITHUB_TOKEN}`)
+    .set('Authorization', authorization)
     .then(res => res.body);
 }
 
