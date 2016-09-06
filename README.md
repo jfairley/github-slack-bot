@@ -17,10 +17,18 @@ npm start
 
 ## Dockerfile
 
+### with docker-compose
+
 ```bash
-docker build -t gh-bot .
-docker run -d --name gh-bot gh-bot
-docker logs -f gh-bot
+docker-compose up
+```
+
+### with commands
+
+```bash
+docker build -t github-slack-bot .
+docker run -d --rm -p 3420:3420 -e GITHUB_TOKEN=$GITHUB_TOKEN -e SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN --name github-slack-bot github-slack-bot
+docker logs -f github-slack-bot
 ```
 
 ## Tunneling

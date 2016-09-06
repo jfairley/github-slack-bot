@@ -1,0 +1,7 @@
+github-slack-bot:
+  build: .
+  environment:
+    - GITHUB_TOKEN
+    - SLACK_BOT_TOKEN
+  ports:
+    - "3420:3420"
