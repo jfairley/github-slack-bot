@@ -1,3 +1,5 @@
+'use strict';
+
 if (!process.env.SLACK_BOT_TOKEN) {
   console.error('Error: Specify SLACK_BOT_TOKEN in environment');
   process.exit(1);
@@ -10,36 +12,13 @@ const BOT_ID = 'D1BPHEUB1';
 
 module.exports = controller => {
 
-  var bot = controller.spawn({
+  const bot = controller.spawn({
     token: process.env.SLACK_BOT_TOKEN
   }).startRTM();
 
 
-  controller.hears('username (.*)', 'direct_message,direct_mention,mention', function (bot, message) {
-
-    bot.api.reactions.add({
-      timestamp: message.ts,
-      channel: message.channel,
-      name: 'robot_face'
-    }, function (err) {
-      if (err) {
-        console.error('Failed to add emoji reaction :(', err);
-      }
-    });
-
-    var username = message.match[1];
-    controller.storage.users.save({
-      id: message.user,
-      github_user: username
-    }, function () {
-      bot.reply(message, 'Github username registered!!');
-    });
-
-  });
-
-
-// github hooks
-  var github = githubhook({
+  // github hooks
+  const github = githubhook({
     host: 'localhost',
     port: 3420,
     secret: 'my_secret'
@@ -47,7 +26,7 @@ module.exports = controller => {
 
   github.listen();
 
-  github.on('*', function (event, repo, ref, data) {
+  github.on('*', (event, repo, ref, data) => {
     switch (event) {
       case 'issues':
       case 'pull_request':
@@ -74,7 +53,7 @@ module.exports = controller => {
 
 
   function notifyIssue (data) {
-    var is_comment = _.has(data, 'comment'),
+    let is_comment = _.has(data, 'comment'),
         is_pull_request = _.has(data, 'pull_request') || _.has(data, 'issue.pull_request'),
       // combine for convenience, allowing comment data to win if it exists
         payload = _.assign({}, data.issue, data.pull_request, data.comment),
@@ -109,16 +88,16 @@ module.exports = controller => {
     }
 
 
-    controller.storage.users.all(function (err, all_user_data) {
+    controller.storage.users.all((err, all_user_data) => {
       if (err) {
         console.error(err);
         return;
       }
 
-      _.forEach(all_user_data, function (user) {
+      _.forEach(all_user_data, user => {
         if (user.github_user) {
-          var github_user = '@' + user.github_user;
-          var mentioned = _.includes(msg_attachment_description, github_user);
+          let github_user = '@' + user.github_user;
+          let mentioned = _.includes(msg_attachment_description, github_user);
           if (mentioned && data.action === 'edited') {
             // message only if name was added in change
             mentioned = !_.includes(data.changes.body.from, github_user)

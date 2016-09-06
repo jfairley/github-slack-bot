@@ -34,31 +34,41 @@ module.exports = controller => {
     {pattern: /^ (.*)$/i, callback: listPRs}
   ];
 
-  controller.hears('(pulls|prs)(.*)', 'direct_message,direct_mention,mention', (bot, msg) => {
-    let pattern = msg.match[2];
+  controller.hears('(pulls|prs)(.*)', 'direct_message,direct_mention,mention', (bot, message) => {
+    bot.api.reactions.add({
+      timestamp: message.ts,
+      channel: message.channel,
+      name: 'hourglass'
+    }, (err) => {
+      if (err) {
+        console.error('Failed to add emoji reaction :(', err);
+      }
+    });
+
+    let pattern = message.match[2];
     for (let i = 0; i < actions.length; i++) {
       let action = actions[i];
       let matches = action.pattern.exec(pattern);
       if (matches) {
-        return action.callback.apply(null, _.flatten([bot, msg, _.slice(matches, 1)]));
+        return action.callback.apply(null, _.flatten([bot, message, _.slice(matches, 1)]));
       }
     }
 
-    bot.reply(msg, 'Error: Unknown command `' + msg.text + '`');
+    bot.reply(message, 'Error: Unknown command `' + message.text + '`');
   });
 
   /**
    * search for PRs for the current user
    */
-  function listPRsForUser (bot, msg) {
-    const userId = msg.user;
+  function listPRsForUser (bot, message) {
+    const userId = message.user;
     controller.storage.users.get(userId, (err, data) => {
       if (err) {
-        bot.reply(msg, 'Failed to load data', err);
+        bot.reply(message, 'Failed to load data', err);
       } else if (!data) {
-        provideUsername(bot, msg);
+        provideUsername(bot, message);
       } else {
-        listPRs(bot, msg, userId);
+        listPRs(bot, message, userId);
       }
     });
   }
@@ -66,13 +76,13 @@ module.exports = controller => {
   /**
    * search for PRs
    */
-  function listPRs (bot, msg, team) {
+  function listPRs (bot, message, team) {
     controller.storage.users.get(team, (err, data) => {
       if (err) {
-        return bot.reply(msg, 'Failed to load data', err);
+        return bot.reply(message, 'Failed to load data', err);
       }
       if (!data) {
-        return teamDoesNotExist(bot, msg, team);
+        return teamDoesNotExist(bot, message, team);
       }
       const snippets = getSnippets(data, true);
       return Promise.resolve(fetchOrgIssues())
@@ -92,7 +102,7 @@ module.exports = controller => {
           }
         }))
         .map(group => new Promise((resolve, reject) => {
-          bot.reply(msg, {
+          bot.reply(message, {
             text: `*${group[0].repository.name}*`,
             attachments: group.map(resp => {
               const link = `<${resp.html_url}|${resp.title}>`;
@@ -128,33 +138,33 @@ module.exports = controller => {
             })
           }, err => err ? reject(err) : resolve());
         }))
-        .then(data => _.isEmpty(data) ? bot.reply(msg, `No matching issues!! You're in the clear.`) : data)
-        .catch(err => bot.reply(msg, `Unhandled error:\n${err}`));
+        .then(data => _.isEmpty(data) ? bot.reply(message, `No matching issues!! You're in the clear.`) : data)
+        .catch(err => bot.reply(message, `Unhandled error:\n${err}`));
     });
   }
 
   /**
    * show configured teams
    */
-  function listTeams (bot, msg) {
+  function listTeams (bot, message) {
     controller.storage.users.all((err, data) => {
-      bot.reply(msg, `Configured teams:\n${_.keys(data).map(key => ` - ${key}`).join('\n')}`);
+      bot.reply(message, `Configured teams:\n${_.keys(data).map(key => ` - ${key}`).join('\n')}`);
     });
   }
 
   /**
    * create a team for the current user and add the github username as a snippet
    */
-  function newTeamForUser (bot, msg, snippet) {
-    const userId = msg.user;
+  function newTeamForUser (bot, message, snippet) {
+    const userId = message.user;
     controller.storage.users.save({id: userId, github_user: snippet}, err => {
       if (err) {
-        bot.reply(msg, 'failed to save data ' + err);
+        bot.reply(message, 'failed to save data ' + err);
       } else {
         bot.reply(
-          msg,
+          message,
           `Github username registered: \`${snippet}\`! From now on, just type \'pulls\' to see your issues.`,
-          err => err ? null : listPRsForUser(bot, msg)
+          err => err ? null : listPRsForUser(bot, message)
         );
       }
     });
@@ -163,18 +173,18 @@ module.exports = controller => {
   /**
    * create a new team
    */
-  function newTeam (bot, msg, team) {
+  function newTeam (bot, message, team) {
     controller.storage.users.get(team, (err, data) => {
       if (err) {
-        bot.reply(msg, 'Failed to load data ' + err);
+        bot.reply(message, 'Failed to load data ' + err);
       } else if (data) {
-        bot.reply(msg, `Error: Team already exists. See \`${msg.match[1]} details ${team}\`.`);
+        bot.reply(message, `Error: Team already exists. See \`${message.match[1]} details ${team}\`.`);
       } else {
         controller.storage.users.save({id: team, snippets: []}, err => {
           if (err) {
-            bot.reply(msg, `Failed to create team. ${err}`);
+            bot.reply(message, `Failed to create team. ${err}`);
           } else {
-            bot.reply(msg, `Created team: ${team}!`);
+            bot.reply(message, `Created team: ${team}!`);
           }
         });
       }
@@ -184,29 +194,29 @@ module.exports = controller => {
   /**
    * delete a team
    */
-  function removeTeam (bot, msg) {
-    bot.reply(msg, 'not yet implemented');
+  function removeTeam (bot, message) {
+    bot.reply(message, 'not yet implemented');
   }
 
   /**
    * rename a team
    */
-  function renameTeam (bot, msg) {
-    bot.reply(msg, 'not yet implemented');
+  function renameTeam (bot, message) {
+    bot.reply(message, 'not yet implemented');
   }
 
   /**
    * show details for the current user
    */
-  function teamDetailsForUser (bot, msg) {
-    const userId = msg.user;
+  function teamDetailsForUser (bot, message) {
+    const userId = message.user;
     controller.storage.users.get(userId, (err, data) => {
       if (err) {
-        bot.reply(msg, 'Failed to load data ' + err);
+        bot.reply(message, 'Failed to load data ' + err);
       } else if (!data) {
-        provideUsername(bot, msg);
+        provideUsername(bot, message);
       } else {
-        teamDetails(bot, msg, userId);
+        teamDetails(bot, message, userId);
       }
     });
   }
@@ -214,15 +224,15 @@ module.exports = controller => {
   /**
    * show details for a list of snippets
    */
-  function teamDetails (bot, msg, team) {
+  function teamDetails (bot, message, team) {
     controller.storage.users.get(team, (err, data) => {
       if (err) {
-        bot.reply(msg, 'Failed to load data ' + err);
+        bot.reply(message, 'Failed to load data ' + err);
       } else if (!data) {
-        teamDoesNotExist(bot, msg, team)
+        teamDoesNotExist(bot, message, team)
       } else {
         const snippets = getSnippets(data, true);
-        bot.reply(msg, `Details for ${team}:\n${snippets.map(snippet => ` - ${snippet}`).join('\n')}`);
+        bot.reply(message, `Details for ${team}:\n${snippets.map(snippet => ` - ${snippet}`).join('\n')}`);
       }
     });
   }
@@ -230,15 +240,15 @@ module.exports = controller => {
   /**
    * add a snippet for the current user
    */
-  function addSnippetForUser (bot, msg, newSnippet) {
-    const userId = msg.user;
+  function addSnippetForUser (bot, message, newSnippet) {
+    const userId = message.user;
     controller.storage.users.get(userId, (err, data) => {
       if (err) {
-        bot.reply(msg, 'Failed to load data ' + err);
+        bot.reply(message, 'Failed to load data ' + err);
       } else if (!data) {
-        provideUsername(bot, msg);
+        provideUsername(bot, message);
       } else {
-        addSnippet(bot, msg, newSnippet, userId);
+        addSnippet(bot, message, newSnippet, userId);
       }
     });
   }
@@ -246,19 +256,19 @@ module.exports = controller => {
   /**
    * add a snippet to a team
    */
-  function addSnippet (bot, msg, newSnippet, team) {
+  function addSnippet (bot, message, newSnippet, team) {
     controller.storage.users.get(team, (err, data) => {
       if (err) {
-        bot.reply(msg, 'Failed to load data ' + err);
+        bot.reply(message, 'Failed to load data ' + err);
       } else if (!data) {
-        teamDoesNotExist(bot, msg, team);
+        teamDoesNotExist(bot, message, team);
       } else {
         data.snippets = flatten(getSnippets(data, false), newSnippet);
         controller.storage.users.save(data, err => {
           if (err) {
-            bot.reply(msg, `Failed to add ${newSnippet}! ${err}`);
+            bot.reply(message, `Failed to add ${newSnippet}! ${err}`);
           } else {
-            bot.reply(msg, `Added ${newSnippet}!`);
+            bot.reply(message, `Added ${newSnippet}!`);
           }
         });
       }
@@ -268,13 +278,13 @@ module.exports = controller => {
   /**
    * remove a snippet for the current user
    */
-  function removeSnippetForUser (bot, msg, removedSnippet) {
-    const userId = msg.user;
+  function removeSnippetForUser (bot, message, removedSnippet) {
+    const userId = message.user;
     controller.storage.users.get(userId, (err, data) => {
       if (!data) {
-        provideUsername(bot, msg);
+        provideUsername(bot, message);
       } else {
-        removeSnippet(bot, msg, removedSnippet, userId);
+        removeSnippet(bot, message, removedSnippet, userId);
       }
     });
   }
@@ -282,29 +292,29 @@ module.exports = controller => {
   /**
    * remove a snippet from a team
    */
-  function removeSnippet (bot, msg, removedSnippet, team) {
+  function removeSnippet (bot, message, removedSnippet, team) {
     controller.storage.users.get(team, (err, data) => {
       if (!data) {
-        teamDoesNotExist(bot, msg, team);
+        teamDoesNotExist(bot, message, team);
       } else {
         data = _.merge(data, {snippets: _.without(getSnippets(data, false), removedSnippet)});
         controller.storage.users.save(data, err => {
           if (err) {
-            bot.reply(msg, `Failed to remove ${removedSnippet}! ${err}`);
+            bot.reply(message, `Failed to remove ${removedSnippet}! ${err}`);
           } else {
-            bot.reply(msg, `Removed ${removedSnippet}!`);
+            bot.reply(message, `Removed ${removedSnippet}!`);
           }
         });
       }
     });
   }
 
-  function provideUsername (bot, msg) {
-    return bot.reply(msg, `Please provide your username: \`pulls username <github username>\``);
+  function provideUsername (bot, message) {
+    return bot.reply(message, `Please provide your username: \`pulls username <github username>\``);
   }
 
-  function teamDoesNotExist (bot, msg, team) {
-    return bot.reply(msg, `Error: Team does not exist. See \`${msg.match[1]} new team ${team}\`.`);
+  function teamDoesNotExist (bot, message, team) {
+    return bot.reply(message, `Error: Team does not exist. See \`${message.match[1]} new team ${team}\`.`);
   }
 };
 
