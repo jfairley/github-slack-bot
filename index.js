@@ -3,7 +3,7 @@
 // create shared slack bot controller
 const Botkit = require('botkit');
 const controller = Botkit.slackbot({
-  debug: true
+  debug: process.env.SLACK_BOT_DEBUG === 'true'
 });
 
 

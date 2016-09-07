@@ -4,15 +4,10 @@ if (!process.env.SLACK_BOT_TOKEN) {
   console.error('Error: Specify SLACK_BOT_TOKEN in environment');
   process.exit(1);
 }
-if (!process.env.SLACK_BOT_ID) {
-  console.error('Error: Specify SLACK_BOT_ID in environment');
-  process.exit(1);
-}
 
 
 const _ = require('lodash');
 const githubhook = require('githubhook');
-const BOT_ID = process.env.SLACK_BOT_ID;
 
 module.exports = controller => {
 
@@ -122,16 +117,22 @@ module.exports = controller => {
             mentioned = !_.includes(data.changes.body.from, github_user)
           }
           if (mentioned) {
-            bot.say({
-              text: msg_text,
-              channel: BOT_ID,
-              user: user.id,
-              attachments: [{
-                color: color,
-                title: msg_attachment_title,
-                title_link: link,
-                text: msg_attachment_description
-              }]
+            bot.startPrivateConversation({
+              user: user.id
+            }, (err, convo) => {
+              if (err) {
+                console.error('failed to start private conversation', err);
+              } else {
+                convo.say({
+                  text: msg_text,
+                  attachments: [{
+                    color: color,
+                    title: msg_attachment_title,
+                    title_link: link,
+                    text: msg_attachment_description
+                  }]
+                });
+              }
             });
           }
         }
