@@ -14,8 +14,12 @@ module.exports = controller => {
 
   const actions = [
     {pattern: /^$/i, callback: listPRsForUser},
+    {pattern: /^list (.*)$/i, callback: listPRs},
+    {pattern: /^list$/i, callback: listPRsForUser},
+    {pattern: /^pulls (.*)$/i, callback: listPRs},
+    {pattern: /^pulls$/i, callback: listPRsForUser},
     {pattern: /^help$/i, callback: showHelp},
-    {pattern: /^list$/i, callback: listTeams},
+    {pattern: /^teams$/i, callback: listTeams},
     {pattern: /^add team (.*)$/i, callback: newTeam},
     {pattern: /^new team (.*)$/i, callback: newTeam},
     {pattern: /^username (.*)$/i, callback: newTeamForUser},
@@ -36,10 +40,10 @@ module.exports = controller => {
   ];
 
   controller.setupWebserver(3000, (err, webserver) => controller.createWebhookEndpoints(webserver));
-  controller.on('slash_command', (bot, message) => handlePattern(bot, message, message.text));
-  controller.hears('(pulls|prs)(.*)', 'direct_message,direct_mention,mention', (bot, message) => handlePattern(bot, message, _.trim(message.match[2])));
+  controller.on('slash_command', (bot, message) => handlePattern(bot, bot.replyPublicDelayed, message));
+  controller.hears('^([^\/].*)$', 'direct_message,direct_mention', (bot, message) => handlePattern(bot, bot.reply, message));
 
-  function handlePattern (bot, message, pattern) {
+  function handlePattern (bot, bot_reply, message) {
     bot.api.reactions.add({
       timestamp: message.ts,
       channel: message.channel,
@@ -50,56 +54,59 @@ module.exports = controller => {
       }
     });
 
+    // in case it's a slash command, we need to reply with something quickly
+    bot.replyPrivate(message, ':hourglass:');
+
     for (let i = 0; i < actions.length; i++) {
       let action = actions[i];
-      let matches = action.pattern.exec(pattern);
+      let matches = action.pattern.exec(message.text);
       if (matches) {
-        return action.callback.apply(null, _.flatten([bot, message, _.slice(matches, 1)]));
+        return action.callback.apply(null, _.flatten([bot_reply, message, _.slice(matches, 1)]));
       }
     }
 
-    bot.reply(message, 'Error: Unknown command `' + message.text + '`');
+    bot_reply(message, 'Error: Unknown command `' + message.text + '`');
   }
 
-  function showHelp (bot, message) {
-    return bot.reply(message, `*Summary*
+  function showHelp (bot_reply, message) {
+    return bot_reply(message, `*Summary*
 
 Set up a team with a list of snippets to filter open issues and pull requests.
 
 *Usage*
 
-- \`pulls help\` - display this message
+- \`help\` - display this message
 
 *User Commands*
 
-- \`pulls\` - show all issues and pull-requests based on the snippets defined for the current user
-- \`pulls details\` - show the snippets for the current user
-- \`pulls username <github-username>\` - regiseter a github username for the current user
-- \`pulls add snippet foo\` - add "foo" as a snippet for the current user
-- \`pulls remove snippet foo\` - remove "foo" as a snippet for the current user
+- \`list\` - show all issues and pull-requests based on the defined snippets
+- \`details\` - show the text snippets
+- \`username <github-username>\` - regiseter a github username
+- \`add snippet <snippet-text>\` - add text snippet to match
+- \`remove snippet <snippet-text>\` - remove text snippet to match
 
 *Team Commands*
 
-- \`pulls list\` - show all teams
-- \`pulls my-team\` - show all issues and pull-requests based on the snippets defined as "my-team"
-- \`pulls add team my-team\` - add a team called "my-team"
-- \`pulls remove team my-team\` - remove a team called "my-team"
-- \`pulls rename team my-team to my-new-team\` - rename a team called "my-team" to "my-new-team"
-- \`pulls details my-team\` - show the snippets for "my-team"
-- \`pulls add snippet foo to my-team\` - add "foo" as a snippet for "my-team"
-- \`pulls remove snippet foo from my-team\` - remove "foo" as a snippet for "my-team"`);
+- \`teams\` - show all teams
+- \`<my-team>\` - show all issues and pull-requests based on the snippets defined as "my-team"
+- \`add team <my-team>\` - add a team called "my-team"
+- \`remove team <my-team>\` - remove a team called "my-team"
+- \`rename team <my-team> to <my-new-team>\` - rename a team called "my-team" to "my-new-team"
+- \`details <my-team>\` - show the text snippets for "my-team"
+- \`add snippet <snippet-text> to <my-team>\` - add text snippet to match for "my-team"
+- \`remove snippet <snippet-text> from <my-team>\` - remove text snippet to match for "my-team"`);
   }
 
   /**
    * search for PRs for the current user
    */
-  function listPRsForUser (bot, message) {
+  function listPRsForUser (bot_reply, message) {
     const userId = message.user;
     controller.storage.users.get(userId, (err, data) => {
       if (!data) {
-        provideUsername(bot, message);
+        provideUsername(bot_reply, message);
       } else {
-        listPRs(bot, message, userId);
+        listPRs(bot_reply, message, userId);
       }
     });
   }
@@ -107,10 +114,10 @@ Set up a team with a list of snippets to filter open issues and pull requests.
   /**
    * search for PRs
    */
-  function listPRs (bot, message, team) {
+  function listPRs (bot_reply, message, team) {
     controller.storage.users.get(team, (err, data) => {
       if (!data) {
-        return teamDoesNotExist(bot, message, team);
+        return teamDoesNotExist(bot_reply, message, team);
       }
       const snippets = getSnippets(data, true);
       return Promise.resolve(fetchOrgIssues())
@@ -130,7 +137,7 @@ Set up a team with a list of snippets to filter open issues and pull requests.
           }
         }))
         .map(group => new Promise((resolve, reject) => {
-          bot.reply(message, {
+          bot_reply(message, {
             text: `*${group[0].repository.name}*`,
             attachments: group.map(resp => {
               const link = `<${resp.html_url}|${resp.title}>`;
@@ -166,33 +173,33 @@ Set up a team with a list of snippets to filter open issues and pull requests.
             })
           }, err => err ? reject(err) : resolve());
         }))
-        .then(data => _.isEmpty(data) ? bot.reply(message, `No matching issues!! You're in the clear.`) : data)
-        .catch(err => bot.reply(message, `Unhandled error:\n${err}`));
+        .then(data => _.isEmpty(data) ? bot_reply(message, `No matching issues!! You're in the clear.`) : data)
+        .catch(err => bot_reply(message, `Unhandled error:\n${err}`));
     });
   }
 
   /**
    * show configured teams
    */
-  function listTeams (bot, message) {
+  function listTeams (bot_reply, message) {
     controller.storage.users.all((err, data) => {
-      bot.reply(message, `Configured teams:\n${_.keys(data).map(key => ` - ${key}`).join('\n')}`);
+      bot_reply(message, `Configured teams:\n${_.keys(data).map(key => ` - ${key}`).join('\n')}`);
     });
   }
 
   /**
    * create a team for the current user and add the github username as a snippet
    */
-  function newTeamForUser (bot, message, snippet) {
+  function newTeamForUser (bot_reply, message, snippet) {
     const userId = message.user;
     controller.storage.users.save({id: userId, github_user: snippet}, err => {
       if (err) {
-        bot.reply(message, 'failed to save data ' + err);
+        bot_reply(message, 'failed to save data ' + err);
       } else {
-        bot.reply(
+        bot_reply(
           message,
           `Github username registered: \`${snippet}\`! From now on, just type \'pulls\' to see your issues.`,
-          err => err ? null : listPRsForUser(bot, message)
+          err => err ? null : listPRsForUser(bot_reply, message)
         );
       }
     });
@@ -201,16 +208,16 @@ Set up a team with a list of snippets to filter open issues and pull requests.
   /**
    * create a new team
    */
-  function newTeam (bot, message, team) {
+  function newTeam (bot_reply, message, team) {
     controller.storage.users.get(team, (err, data) => {
       if (data) {
-        bot.reply(message, `Error: Team already exists. See \`${message.match[1]} details ${team}\`.`);
+        bot_reply(message, `Error: Team already exists. See \`details ${team}\`.`);
       } else {
         controller.storage.users.save({id: team, snippets: []}, err => {
           if (err) {
-            bot.reply(message, `Failed to create team. ${err}`);
+            bot_reply(message, `Failed to create team. ${err}`);
           } else {
-            bot.reply(message, `Created team: ${team}!`);
+            bot_reply(message, `Created team: ${team}!`);
           }
         });
       }
@@ -220,27 +227,27 @@ Set up a team with a list of snippets to filter open issues and pull requests.
   /**
    * delete a team
    */
-  function removeTeam (bot, message) {
-    bot.reply(message, 'not yet implemented');
+  function removeTeam (bot_reply, message) {
+    bot_reply(message, 'not yet implemented');
   }
 
   /**
    * rename a team
    */
-  function renameTeam (bot, message) {
-    bot.reply(message, 'not yet implemented');
+  function renameTeam (bot_reply, message) {
+    bot_reply(message, 'not yet implemented');
   }
 
   /**
    * show details for the current user
    */
-  function teamDetailsForUser (bot, message) {
+  function teamDetailsForUser (bot_reply, message) {
     const userId = message.user;
     controller.storage.users.get(userId, (err, data) => {
       if (!data) {
-        provideUsername(bot, message);
+        provideUsername(bot_reply, message);
       } else {
-        teamDetails(bot, message, userId);
+        teamDetails(bot_reply, message, userId);
       }
     });
   }
@@ -248,13 +255,13 @@ Set up a team with a list of snippets to filter open issues and pull requests.
   /**
    * show details for a list of snippets
    */
-  function teamDetails (bot, message, team) {
+  function teamDetails (bot_reply, message, team) {
     controller.storage.users.get(team, (err, data) => {
       if (!data) {
-        teamDoesNotExist(bot, message, team)
+        teamDoesNotExist(bot_reply, message, team)
       } else {
         const snippets = getSnippets(data, true);
-        bot.reply(message, `Details for ${team}:\n${snippets.map(snippet => ` - ${snippet}`).join('\n')}`);
+        bot_reply(message, `Details for ${team}:\n${snippets.map(snippet => ` - ${snippet}`).join('\n')}`);
       }
     });
   }
@@ -262,13 +269,13 @@ Set up a team with a list of snippets to filter open issues and pull requests.
   /**
    * add a snippet for the current user
    */
-  function addSnippetForUser (bot, message, newSnippet) {
+  function addSnippetForUser (bot_reply, message, newSnippet) {
     const userId = message.user;
     controller.storage.users.get(userId, (err, data) => {
       if (!data) {
-        provideUsername(bot, message);
+        provideUsername(bot_reply, message);
       } else {
-        addSnippet(bot, message, newSnippet, userId);
+        addSnippet(bot_reply, message, newSnippet, userId);
       }
     });
   }
@@ -276,17 +283,17 @@ Set up a team with a list of snippets to filter open issues and pull requests.
   /**
    * add a snippet to a team
    */
-  function addSnippet (bot, message, newSnippet, team) {
+  function addSnippet (bot_reply, message, newSnippet, team) {
     controller.storage.users.get(team, (err, data) => {
       if (!data) {
-        teamDoesNotExist(bot, message, team);
+        teamDoesNotExist(bot_reply, message, team);
       } else {
         data.snippets = flatten(getSnippets(data, false), newSnippet);
         controller.storage.users.save(data, err => {
           if (err) {
-            bot.reply(message, `Failed to add ${newSnippet}! ${err}`);
+            bot_reply(message, `Failed to add ${newSnippet}! ${err}`);
           } else {
-            bot.reply(message, `Added ${newSnippet}!`);
+            bot_reply(message, `Added ${newSnippet}!`);
           }
         });
       }
@@ -296,13 +303,13 @@ Set up a team with a list of snippets to filter open issues and pull requests.
   /**
    * remove a snippet for the current user
    */
-  function removeSnippetForUser (bot, message, removedSnippet) {
+  function removeSnippetForUser (bot_reply, message, removedSnippet) {
     const userId = message.user;
     controller.storage.users.get(userId, (err, data) => {
       if (!data) {
-        provideUsername(bot, message);
+        provideUsername(bot_reply, message);
       } else {
-        removeSnippet(bot, message, removedSnippet, userId);
+        removeSnippet(bot_reply, message, removedSnippet, userId);
       }
     });
   }
@@ -310,29 +317,29 @@ Set up a team with a list of snippets to filter open issues and pull requests.
   /**
    * remove a snippet from a team
    */
-  function removeSnippet (bot, message, removedSnippet, team) {
+  function removeSnippet (bot_reply, message, removedSnippet, team) {
     controller.storage.users.get(team, (err, data) => {
       if (!data) {
-        teamDoesNotExist(bot, message, team);
+        teamDoesNotExist(bot_reply, message, team);
       } else {
         data = _.merge(data, {snippets: _.without(getSnippets(data, false), removedSnippet)});
         controller.storage.users.save(data, err => {
           if (err) {
-            bot.reply(message, `Failed to remove ${removedSnippet}! ${err}`);
+            bot_reply(message, `Failed to remove ${removedSnippet}! ${err}`);
           } else {
-            bot.reply(message, `Removed ${removedSnippet}!`);
+            bot_reply(message, `Removed ${removedSnippet}!`);
           }
         });
       }
     });
   }
 
-  function provideUsername (bot, message) {
-    return bot.reply(message, `Please provide your username: \`pulls username <github username>\``);
+  function provideUsername (bot_reply, message) {
+    return bot_reply(message, `Please provide your username: \`username <github username>\``);
   }
 
-  function teamDoesNotExist (bot, message, team) {
-    return bot.reply(message, `Error: Team does not exist. See \`${message.match[1]} new team ${team}\`.`);
+  function teamDoesNotExist (bot_reply, message, team) {
+    return bot_reply(message, `Error: Team does not exist. See \`new team ${team}\`.`);
   }
 };
 
