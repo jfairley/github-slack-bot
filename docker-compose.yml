@@ -3,5 +3,10 @@ github-slack-bot:
   environment:
     - GITHUB_TOKEN
     - SLACK_BOT_TOKEN
+    - SLACK_BOT_STORAGE=/storage
+    - SLACK_BOT_DEBUG
   ports:
+    - "3000:3000"
     - "3420:3420"
+  volumes:
+    - $SLACK_BOT_STORAGE:/storage

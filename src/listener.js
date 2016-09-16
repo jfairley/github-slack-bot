@@ -17,11 +17,7 @@ module.exports = controller => {
 
 
   // github hooks
-  const github = githubhook({
-    host: 'localhost',
-    port: 3420,
-    secret: 'my_secret'
-  });
+  const github = githubhook({});
 
   github.listen();
 

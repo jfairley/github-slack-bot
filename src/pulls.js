@@ -14,27 +14,32 @@ module.exports = controller => {
 
   const actions = [
     {pattern: /^$/i, callback: listPRsForUser},
-    {pattern: /^ list$/i, callback: listTeams},
-    {pattern: /^ add team (.*)$/i, callback: newTeam},
-    {pattern: /^ new team (.*)$/i, callback: newTeam},
-    {pattern: /^ username (.*)$/i, callback: newTeamForUser},
-    {pattern: /^ delete team (.*)$/i, callback: removeTeam},
-    {pattern: /^ remove team (.*)$/i, callback: removeTeam},
-    {pattern: /^ rename team (.*) to (.*)$/i, callback: renameTeam},
-    {pattern: /^ details (.*)$/i, callback: teamDetails},
-    {pattern: /^ details$/i, callback: teamDetailsForUser},
-    {pattern: /^ add snippet (.*) to (.*)$/i, callback: addSnippet},
-    {pattern: /^ add snippet (.*)$/i, callback: addSnippetForUser},
-    {pattern: /^ new snippet (.*) to (.*)$/i, callback: addSnippet},
-    {pattern: /^ new snippet (.*)$/i, callback: addSnippetForUser},
-    {pattern: /^ delete snippet (.*) from (.*)$/i, callback: removeSnippet},
-    {pattern: /^ delete snippet (.*)$/i, callback: removeSnippetForUser},
-    {pattern: /^ remove snippet (.*) from (.*)$/i, callback: removeSnippet},
-    {pattern: /^ remove snippet (.*)$/i, callback: removeSnippetForUser},
-    {pattern: /^ (.*)$/i, callback: listPRs}
+    {pattern: /^help$/i, callback: showHelp},
+    {pattern: /^list$/i, callback: listTeams},
+    {pattern: /^add team (.*)$/i, callback: newTeam},
+    {pattern: /^new team (.*)$/i, callback: newTeam},
+    {pattern: /^username (.*)$/i, callback: newTeamForUser},
+    {pattern: /^delete team (.*)$/i, callback: removeTeam},
+    {pattern: /^remove team (.*)$/i, callback: removeTeam},
+    {pattern: /^rename team (.*) to (.*)$/i, callback: renameTeam},
+    {pattern: /^details (.*)$/i, callback: teamDetails},
+    {pattern: /^details$/i, callback: teamDetailsForUser},
+    {pattern: /^add snippet (.*) to (.*)$/i, callback: addSnippet},
+    {pattern: /^add snippet (.*)$/i, callback: addSnippetForUser},
+    {pattern: /^new snippet (.*) to (.*)$/i, callback: addSnippet},
+    {pattern: /^new snippet (.*)$/i, callback: addSnippetForUser},
+    {pattern: /^delete snippet (.*) from (.*)$/i, callback: removeSnippet},
+    {pattern: /^delete snippet (.*)$/i, callback: removeSnippetForUser},
+    {pattern: /^remove snippet (.*) from (.*)$/i, callback: removeSnippet},
+    {pattern: /^remove snippet (.*)$/i, callback: removeSnippetForUser},
+    {pattern: /^(.*)$/i, callback: listPRs}
   ];
 
-  controller.hears('(pulls|prs)(.*)', 'direct_message,direct_mention,mention', (bot, message) => {
+  controller.setupWebserver(3000, (err, webserver) => controller.createWebhookEndpoints(webserver));
+  controller.on('slash_command', (bot, message) => handlePattern(bot, message, message.text));
+  controller.hears('(pulls|prs)(.*)', 'direct_message,direct_mention,mention', (bot, message) => handlePattern(bot, message, _.trim(message.match[2])));
+
+  function handlePattern (bot, message, pattern) {
     bot.api.reactions.add({
       timestamp: message.ts,
       channel: message.channel,
@@ -45,7 +50,6 @@ module.exports = controller => {
       }
     });
 
-    let pattern = message.match[2];
     for (let i = 0; i < actions.length; i++) {
       let action = actions[i];
       let matches = action.pattern.exec(pattern);
@@ -55,7 +59,36 @@ module.exports = controller => {
     }
 
     bot.reply(message, 'Error: Unknown command `' + message.text + '`');
-  });
+  }
+
+  function showHelp (bot, message) {
+    return bot.reply(message, `*Summary*
+
+Set up a team with a list of snippets to filter open issues and pull requests.
+
+*Usage*
+
+- \`pulls help\` - display this message
+
+*User Commands*
+
+- \`pulls\` - show all issues and pull-requests based on the snippets defined for the current user
+- \`pulls details\` - show the snippets for the current user
+- \`pulls username <github-username>\` - regiseter a github username for the current user
+- \`pulls add snippet foo\` - add "foo" as a snippet for the current user
+- \`pulls remove snippet foo\` - remove "foo" as a snippet for the current user
+
+*Team Commands*
+
+- \`pulls list\` - show all teams
+- \`pulls my-team\` - show all issues and pull-requests based on the snippets defined as "my-team"
+- \`pulls add team my-team\` - add a team called "my-team"
+- \`pulls remove team my-team\` - remove a team called "my-team"
+- \`pulls rename team my-team to my-new-team\` - rename a team called "my-team" to "my-new-team"
+- \`pulls details my-team\` - show the snippets for "my-team"
+- \`pulls add snippet foo to my-team\` - add "foo" as a snippet for "my-team"
+- \`pulls remove snippet foo from my-team\` - remove "foo" as a snippet for "my-team"`);
+  }
 
   /**
    * search for PRs for the current user
@@ -63,9 +96,7 @@ module.exports = controller => {
   function listPRsForUser (bot, message) {
     const userId = message.user;
     controller.storage.users.get(userId, (err, data) => {
-      if (err) {
-        bot.reply(message, 'Failed to load data', err);
-      } else if (!data) {
+      if (!data) {
         provideUsername(bot, message);
       } else {
         listPRs(bot, message, userId);
@@ -78,9 +109,6 @@ module.exports = controller => {
    */
   function listPRs (bot, message, team) {
     controller.storage.users.get(team, (err, data) => {
-      if (err) {
-        return bot.reply(message, 'Failed to load data', err);
-      }
       if (!data) {
         return teamDoesNotExist(bot, message, team);
       }
@@ -175,9 +203,7 @@ module.exports = controller => {
    */
   function newTeam (bot, message, team) {
     controller.storage.users.get(team, (err, data) => {
-      if (err) {
-        bot.reply(message, 'Failed to load data ' + err);
-      } else if (data) {
+      if (data) {
         bot.reply(message, `Error: Team already exists. See \`${message.match[1]} details ${team}\`.`);
       } else {
         controller.storage.users.save({id: team, snippets: []}, err => {
@@ -211,9 +237,7 @@ module.exports = controller => {
   function teamDetailsForUser (bot, message) {
     const userId = message.user;
     controller.storage.users.get(userId, (err, data) => {
-      if (err) {
-        bot.reply(message, 'Failed to load data ' + err);
-      } else if (!data) {
+      if (!data) {
         provideUsername(bot, message);
       } else {
         teamDetails(bot, message, userId);
@@ -226,9 +250,7 @@ module.exports = controller => {
    */
   function teamDetails (bot, message, team) {
     controller.storage.users.get(team, (err, data) => {
-      if (err) {
-        bot.reply(message, 'Failed to load data ' + err);
-      } else if (!data) {
+      if (!data) {
         teamDoesNotExist(bot, message, team)
       } else {
         const snippets = getSnippets(data, true);
@@ -243,9 +265,7 @@ module.exports = controller => {
   function addSnippetForUser (bot, message, newSnippet) {
     const userId = message.user;
     controller.storage.users.get(userId, (err, data) => {
-      if (err) {
-        bot.reply(message, 'Failed to load data ' + err);
-      } else if (!data) {
+      if (!data) {
         provideUsername(bot, message);
       } else {
         addSnippet(bot, message, newSnippet, userId);
@@ -258,9 +278,7 @@ module.exports = controller => {
    */
   function addSnippet (bot, message, newSnippet, team) {
     controller.storage.users.get(team, (err, data) => {
-      if (err) {
-        bot.reply(message, 'Failed to load data ' + err);
-      } else if (!data) {
+      if (!data) {
         teamDoesNotExist(bot, message, team);
       } else {
         data.snippets = flatten(getSnippets(data, false), newSnippet);
