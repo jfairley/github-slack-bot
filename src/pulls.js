@@ -153,7 +153,7 @@ Set up a team with a list of snippets to filter open issues and pull requests.
               // has labels?
               if (!_.isEmpty(resp.labels)) {
                 extras.push({
-                  title: 'Labels',
+                  title: `Label${1 < resp.labels.length ? 's' : ''}`,
                   value: resp.labels.map(l => l.name).join(', '),
                   short: true
                 })
