@@ -125,7 +125,8 @@ module.exports = controller => {
                     color: color,
                     title: msg_attachment_title,
                     title_link: link,
-                    text: msg_attachment_description
+                    text: msg_attachment_description,
+                    mrkdwn_in: ['text']
                   }]
                 });
               }

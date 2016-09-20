@@ -150,6 +150,14 @@ Set up a team with a list of snippets to filter open issues and pull requests.
                   short: true
                 });
               }
+              // has labels?
+              if (!_.isEmpty(resp.labels)) {
+                extras.push({
+                  title: 'Labels',
+                  value: resp.labels.map(l => l.name).join(', '),
+                  short: true
+                })
+              }
 
               let color;
               switch (_.get(resp, 'pull_request.mergeable_state')) {
@@ -165,10 +173,12 @@ Set up a team with a list of snippets to filter open issues and pull requests.
                   break;
               }
 
+              // render extras as multiline text for brevity
+              let moreTexts = extras.map(e => `- *${e.title}*: ${e.value}`);
               return {
                 color: color,
-                text: `${link} (${resp.user.login})`,
-                fields: extras
+                text: `${link} (${resp.user.login})\n${moreTexts.join('\n')}`,
+                mrkdwn_in: ['text']
               }
             })
           }, err => err ? reject(err) : resolve());
