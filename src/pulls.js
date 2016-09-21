@@ -36,7 +36,7 @@ module.exports = controller => {
     {pattern: /^delete snippet (.*)$/i, callback: removeSnippetForUser},
     {pattern: /^remove snippet (.*) from (.*)$/i, callback: removeSnippet},
     {pattern: /^remove snippet (.*)$/i, callback: removeSnippetForUser},
-    {pattern: /^(.*)$/i, callback: listPRs}
+    {pattern: /^(.*)$/i, callback: handleUnrecognized}
   ];
 
   controller.setupWebserver(3000, (err, webserver) => controller.createWebhookEndpoints(webserver));
@@ -81,7 +81,7 @@ Set up a team with a list of snippets to filter open issues and pull requests.
 
 - \`list\` - show all issues and pull-requests based on the defined snippets
 - \`details\` - show the text snippets
-- \`username <github-username>\` - regiseter a github username
+- \`username <github-username>\` - register a github username
 - \`add snippet <snippet-text>\` - add text snippet to match
 - \`remove snippet <snippet-text>\` - remove text snippet to match
 
@@ -95,6 +95,16 @@ Set up a team with a list of snippets to filter open issues and pull requests.
 - \`details <my-team>\` - show the text snippets for "my-team"
 - \`add snippet <snippet-text> to <my-team>\` - add text snippet to match for "my-team"
 - \`remove snippet <snippet-text> from <my-team>\` - remove text snippet to match for "my-team"`);
+  }
+
+  function handleUnrecognized (bot_reply, message, text) {
+    controller.storage.users.get(text, (err, data) => {
+      if (!data) {
+        bot_reply(message, 'Unrecognized input. Ask for `help` to see a list of commands.');
+      } else {
+        listPRs(bot_reply, message, text);
+      }
+    });
   }
 
   /**
