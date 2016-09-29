@@ -212,16 +212,22 @@ Set up a team with a list of snippets to filter open issues and pull requests.
    */
   function newTeamForUser (bot_reply, message, snippet) {
     const userId = message.user;
-    controller.storage.users.save({id: userId, github_user: snippet}, err => {
-      if (err) {
-        bot_reply(message, 'failed to save data ' + err);
-      } else {
-        bot_reply(
-          message,
-          `Github username registered: \`${snippet}\`! From now on, just type \`list\` to see your issues, or type \`help\` to see a list of commands.`,
-          err => err ? null : listPRsForUser(bot_reply, message)
-        );
+    controller.storage.users.get(userId, (err, data) => {
+      if (!data) {
+        data = {id: userId};
       }
+      data.github_user = snippet;
+      controller.storage.users.save(data, err => {
+        if (err) {
+          bot_reply(message, 'failed to save data ' + err);
+        } else {
+          bot_reply(
+            message,
+            `Github username registered: \`${snippet}\`! From now on, just type \`list\` to see your issues, or type \`help\` to see a list of commands.`,
+            err => err ? null : listPRsForUser(bot_reply, message)
+          );
+        }
+      });
     });
   }
 
@@ -233,7 +239,11 @@ Set up a team with a list of snippets to filter open issues and pull requests.
       if (data) {
         bot_reply(message, `Error: Team already exists. See \`details ${team}\`.`);
       } else {
-        controller.storage.users.save({id: team, snippets: []}, err => {
+        if (!data) {
+          data = {id: team};
+        }
+        data.snippets = [];
+        controller.storage.users.save(data, err => {
           if (err) {
             bot_reply(message, `Failed to create team. ${err}`);
           } else {
