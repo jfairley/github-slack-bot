@@ -203,7 +203,7 @@ Set up a team with a list of snippets to filter open issues and pull requests.
    */
   function listTeams (bot_reply, message) {
     controller.storage.users.all((err, data) => {
-      bot_reply(message, `Configured teams:\n${_.keys(data).map(key => ` - ${key}`).join('\n')}`);
+      bot_reply(message, `Configured teams:\n${data.map(team => ` - ${team.id}`).join('\n')}`);
     });
   }
 
