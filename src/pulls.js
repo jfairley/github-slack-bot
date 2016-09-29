@@ -218,7 +218,7 @@ Set up a team with a list of snippets to filter open issues and pull requests.
       } else {
         bot_reply(
           message,
-          `Github username registered: \`${snippet}\`! From now on, just type \'pulls\' to see your issues.`,
+          `Github username registered: \`${snippet}\`! From now on, just type \`list\` to see your issues, or type \`help\` to see a list of commands.`,
           err => err ? null : listPRsForUser(bot_reply, message)
         );
       }
