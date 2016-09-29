@@ -17,7 +17,9 @@ module.exports = controller => {
 
 
   // github hooks
-  const github = githubhook({});
+  const github = githubhook({
+    port: process.env.GITHUB_WEBHOOK_PORT
+  });
 
   github.listen();
 

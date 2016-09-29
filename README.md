@@ -3,12 +3,14 @@
 
 ## Runtime Environment
 
-| Variables           | Description                | More Information                                                        |
-|---------------------|----------------------------|-------------------------------------------------------------------------|
-| `GITHUB_TOKEN`      | github webhook token       | https://developer.github.com/webhooks/                                  |
-| `SLACK_BOT_TOKEN`   | bot token from slack.com   | https://api.slack.com/bot-users / https://my.slack.com/services/new/bot |
-| `SLACK_BOT_DEBUG`   | enable botkit debug output | `true` / `false`                                                        |
-| `SLACK_BOT_STORAGE` | botkit persistence path    | https://github.com/howdyai/botkit#storing-information                   |
+| Variables             | Description                | Required           | More Information                                                        |
+|-----------------------|----------------------------|--------------------|-------------------------------------------------------------------------|
+| `GITHUB_TOKEN`        | github webhook token       | :white_check_mark: | https://developer.github.com/webhooks/                                  |
+| `GITHUB_WEBHOOK_PORT` | github webhook port        |                    | https://developer.github.com/webhooks/                                  |
+| `SLACK_BOT_TOKEN`     | bot token from slack.com   | :white_check_mark: | https://api.slack.com/bot-users / https://my.slack.com/services/new/bot |
+| `SLACK_BOT_PORT`      | botkit persistence path    |                    | https://github.com/howdyai/botkit#storing-information                   |
+| `SLACK_BOT_DEBUG`     | enable botkit debug output |                    | `true` / `false`                                                        |
+| `SLACK_BOT_STORAGE`   | botkit persistence path    |                    | https://github.com/howdyai/botkit#storing-information                   |
 
 
 ## Develop

@@ -6,6 +6,7 @@ if (!process.env.GITHUB_TOKEN) {
 }
 
 const authorization = `token ${process.env.GITHUB_TOKEN}`;
+const slashCommandPort = process.env.SLACK_BOT_PORT || 3000;
 const _ = require('lodash');
 const request = require('superagent');
 const Promise = require('bluebird');
@@ -39,7 +40,7 @@ module.exports = controller => {
     {pattern: /^(.*)$/i, callback: handleUnrecognized}
   ];
 
-  controller.setupWebserver(3000, (err, webserver) => controller.createWebhookEndpoints(webserver));
+  controller.setupWebserver(slashCommandPort, (err, webserver) => controller.createWebhookEndpoints(webserver));
   controller.on('slash_command', (bot, message) => handlePattern(bot, bot.replyPublicDelayed, message));
   controller.hears('^([^\/].*)$', 'direct_message,direct_mention', (bot, message) => handlePattern(bot, bot.reply, message));
 
