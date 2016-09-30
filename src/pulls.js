@@ -353,7 +353,7 @@ Set up a team with a list of snippets to filter open issues and pull requests.
       if (!data) {
         teamDoesNotExist(bot_reply, message, team);
       } else {
-        data = _.merge(data, {snippets: _.without(getSnippets(data, false), removedSnippet)});
+        data.snippets = _.without(getSnippets(data, false), removedSnippet);
         controller.storage.users.save(data, err => {
           if (err) {
             bot_reply(message, `Failed to remove ${removedSnippet}! ${err}`);
