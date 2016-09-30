@@ -85,6 +85,20 @@ module.exports = controller => {
       msg_attachment_title = '#' + issue_number + ': ' + issue_title;
     }
 
+    let color;
+    switch (pull_request_mergeable_state) {
+      case 'clean':
+        color = 'good';
+        break;
+      case 'unknown':
+        color = 'warning';
+        break;
+      case 'unstable':
+      case 'dirty':
+        color = 'danger';
+        break;
+    }
+
 
     controller.storage.users.all((err, all_user_data) => {
       if (err) {
@@ -92,48 +106,39 @@ module.exports = controller => {
         return;
       }
 
-      let color;
-      switch (pull_request_mergeable_state) {
-        case 'clean':
-          color = 'good';
-          break;
-        case 'unknown':
-          color = 'warning';
-          break;
-        case 'unstable':
-        case 'dirty':
-          color = 'danger';
-          break;
-      }
-
       _.forEach(all_user_data, user => {
+        let snippets = user.snippets || [];
         if (user.github_user) {
-          let github_user = '@' + user.github_user;
-          let mentioned = _.includes(msg_attachment_description, github_user);
-          if (mentioned && data.action === 'edited') {
-            // message only if name was added in change
-            mentioned = !_.includes(data.changes.body.from, github_user)
-          }
-          if (mentioned) {
-            bot.startPrivateConversation({
-              user: user.id
-            }, (err, convo) => {
-              if (err) {
-                console.error('failed to start private conversation', err);
-              } else {
-                convo.say({
-                  text: msg_text,
-                  attachments: [{
-                    color: color,
-                    title: msg_attachment_title,
-                    title_link: link,
-                    text: msg_attachment_description,
-                    mrkdwn_in: ['text']
-                  }]
-                });
-              }
-            });
-          }
+          snippets.push('@' + user.github_user);
+        }
+        if (_.isEmpty(snippets)) {
+          return;
+        }
+
+        let mentioned = _.some(snippets, snippet => {
+          return _.includes(msg_attachment_description, snippet) &&
+            // message only if snippet was added in change
+            !(data.action === 'edited' && _.includes(data.changes.body.from, snippet));
+        });
+        if (mentioned) {
+          bot.startPrivateConversation({
+            user: user.id
+          }, (err, convo) => {
+            if (err) {
+              console.error('failed to start private conversation', err);
+            } else {
+              convo.say({
+                text: msg_text,
+                attachments: [{
+                  color: color,
+                  title: msg_attachment_title,
+                  title_link: link,
+                  text: msg_attachment_description,
+                  mrkdwn_in: ['text']
+                }]
+              });
+            }
+          });
         }
       });
     });
