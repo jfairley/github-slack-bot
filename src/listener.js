@@ -109,6 +109,10 @@ module.exports = controller => {
       _.forEach(all_user_data, user => {
         let snippets = user.snippets || [];
         if (user.github_user) {
+          if (user.github_user === data.sender.login) {
+            // do not notify of self-initiated actions
+            return;
+          }
           snippets.push('@' + user.github_user);
         }
         if (_.isEmpty(snippets)) {
