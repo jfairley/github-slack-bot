@@ -177,7 +177,7 @@ module.exports.messenger = controller => {
     }
 
     bot.startPrivateConversation(message, (err, convo) => {
-      function configureTeam () {
+      function beginConfiguration (convo) {
         if (forUser) {
           convo.ask(`Configuring your user ... or ask \`help\`.`, commandPatterns);
         } else {
@@ -191,14 +191,14 @@ module.exports.messenger = controller => {
           convo.say(`Failed to save data: ${err}`);
           convo.next();
         } else {
-          configureTeam();
+          beginConfiguration(convo);
         }
       }
 
       controller.storage.users.get(team, (err, data) => {
         if (data) {
           // configure existing user or team
-          configureTeam();
+          beginConfiguration(convo);
         } else if (forUser) {
           // create new user config
           convo.ask(`To get started, please enter your github username...`, response => {
