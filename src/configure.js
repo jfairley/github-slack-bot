@@ -13,9 +13,9 @@ module.exports.messenger = controller => {
   controller.on('slash_command', (bot, message) => {
     const text = _.trim(message.text);
     if (_.eq(text, 'configure')) {
-      configureTeam(bot, message);
-    } else if (_.startsWith(text)) {
       configureUser(bot, message);
+    } else if (_.startsWith(text)) {
+      configureTeam(bot, message);
     } else {
       // ignore message
     }
