@@ -6,41 +6,42 @@ if (!process.env.GITHUB_TOKEN) {
 }
 
 const authorization = `token ${process.env.GITHUB_TOKEN}`;
-const slashCommandPort = process.env.SLACK_BOT_PORT || 3000;
 const _ = require('lodash');
 const request = require('superagent');
 const Promise = require('bluebird');
 
-module.exports = controller => {
+module.exports.commands = [{
+  command: 'list',
+  message: 'show matching issues and pull-requests for the current user'
+}, {
+  commands: ['list <team>', '<team>'],
+  message: 'show matching issues and pull-requests for the specified team'
+}, {
+  command: 'details',
+  message: 'show the configuration for the current user'
+}, {
+  command: 'details <team>',
+  message: 'show the configuration for the specified team'
+}, {
+  command: 'teams',
+  message: 'show all configured users and teams'
+}];
+
+module.exports.messenger = controller => {
 
   const actions = [
     {pattern: /^$/i, callback: listPRsForUser},
+    // {pattern: /^configure(.*)$/i, callback: configure},
     {pattern: /^list (.*)$/i, callback: listPRs},
     {pattern: /^list$/i, callback: listPRsForUser},
     {pattern: /^pulls (.*)$/i, callback: listPRs},
     {pattern: /^pulls$/i, callback: listPRsForUser},
-    {pattern: /^help$/i, callback: showHelp},
     {pattern: /^teams$/i, callback: listTeams},
-    {pattern: /^add team (.*)$/i, callback: newTeam},
-    {pattern: /^new team (.*)$/i, callback: newTeam},
-    {pattern: /^username (.*)$/i, callback: newTeamForUser},
-    {pattern: /^delete team (.*)$/i, callback: removeTeam},
-    {pattern: /^remove team (.*)$/i, callback: removeTeam},
-    {pattern: /^rename team (.*) to (.*)$/i, callback: renameTeam},
     {pattern: /^details (.*)$/i, callback: teamDetails},
     {pattern: /^details$/i, callback: teamDetailsForUser},
-    {pattern: /^add snippet (.*) to (.*)$/i, callback: addSnippet},
-    {pattern: /^add snippet (.*)$/i, callback: addSnippetForUser},
-    {pattern: /^new snippet (.*) to (.*)$/i, callback: addSnippet},
-    {pattern: /^new snippet (.*)$/i, callback: addSnippetForUser},
-    {pattern: /^delete snippet (.*) from (.*)$/i, callback: removeSnippet},
-    {pattern: /^delete snippet (.*)$/i, callback: removeSnippetForUser},
-    {pattern: /^remove snippet (.*) from (.*)$/i, callback: removeSnippet},
-    {pattern: /^remove snippet (.*)$/i, callback: removeSnippetForUser},
     {pattern: /^(.*)$/i, callback: handleUnrecognized}
   ];
 
-  controller.setupWebserver(slashCommandPort, (err, webserver) => controller.createWebhookEndpoints(webserver));
   controller.on('slash_command', (bot, message) => handlePattern(bot, bot.replyPublicDelayed, message));
   controller.hears('^([^\/].*)$', 'direct_message,direct_mention', (bot, message) => handlePattern(bot, bot.reply, message));
 
@@ -67,35 +68,6 @@ module.exports = controller => {
     }
 
     bot_reply(message, 'Error: Unknown command `' + message.text + '`');
-  }
-
-  function showHelp (bot_reply, message) {
-    return bot_reply(message, `*Summary*
-
-Set up a team with a list of snippets to filter open issues and pull requests.
-
-*Usage*
-
-- \`help\` - display this message
-
-*User Commands*
-
-- \`list\` - show all issues and pull-requests based on the defined snippets
-- \`details\` - show the text snippets
-- \`username <github-username>\` - register a github username
-- \`add snippet <snippet-text>\` - add text snippet to match
-- \`remove snippet <snippet-text>\` - remove text snippet to match
-
-*Team Commands*
-
-- \`teams\` - show all teams
-- \`<my-team>\` - show all issues and pull-requests based on the snippets defined as "my-team"
-- \`add team <my-team>\` - add a team called "my-team"
-- \`remove team <my-team>\` - remove a team called "my-team"
-- \`rename team <my-team> to <my-new-team>\` - rename a team called "my-team" to "my-new-team"
-- \`details <my-team>\` - show the text snippets for "my-team"
-- \`add snippet <snippet-text> to <my-team>\` - add text snippet to match for "my-team"
-- \`remove snippet <snippet-text> from <my-team>\` - remove text snippet to match for "my-team"`);
   }
 
   function handleUnrecognized (bot_reply, message, text) {
@@ -209,67 +181,6 @@ Set up a team with a list of snippets to filter open issues and pull requests.
   }
 
   /**
-   * create a team for the current user and add the github username as a snippet
-   */
-  function newTeamForUser (bot_reply, message, snippet) {
-    const userId = message.user;
-    controller.storage.users.get(userId, (err, data) => {
-      if (!data) {
-        data = {id: userId};
-      }
-      data.github_user = snippet;
-      controller.storage.users.save(data, err => {
-        if (err) {
-          bot_reply(message, 'failed to save data ' + err);
-        } else {
-          bot_reply(
-            message,
-            `Github username registered: \`${snippet}\`! From now on, just type \`list\` to see your issues, or type \`help\` to see a list of commands.`,
-            err => err ? null : listPRsForUser(bot_reply, message)
-          );
-        }
-      });
-    });
-  }
-
-  /**
-   * create a new team
-   */
-  function newTeam (bot_reply, message, team) {
-    controller.storage.users.get(team, (err, data) => {
-      if (data) {
-        bot_reply(message, `Error: Team already exists. See \`details ${team}\`.`);
-      } else {
-        if (!data) {
-          data = {id: team};
-        }
-        data.snippets = [];
-        controller.storage.users.save(data, err => {
-          if (err) {
-            bot_reply(message, `Failed to create team. ${err}`);
-          } else {
-            bot_reply(message, `Created team: ${team}!`);
-          }
-        });
-      }
-    });
-  }
-
-  /**
-   * delete a team
-   */
-  function removeTeam (bot_reply, message) {
-    bot_reply(message, 'not yet implemented');
-  }
-
-  /**
-   * rename a team
-   */
-  function renameTeam (bot_reply, message) {
-    bot_reply(message, 'not yet implemented');
-  }
-
-  /**
    * show details for the current user
    */
   function teamDetailsForUser (bot_reply, message) {
@@ -293,74 +204,6 @@ Set up a team with a list of snippets to filter open issues and pull requests.
       } else {
         const snippets = getSnippets(data, true);
         bot_reply(message, `Details for ${team}:\n${snippets.map(snippet => ` - ${snippet}`).join('\n')}`);
-      }
-    });
-  }
-
-  /**
-   * add a snippet for the current user
-   */
-  function addSnippetForUser (bot_reply, message, newSnippet) {
-    const userId = message.user;
-    controller.storage.users.get(userId, (err, data) => {
-      if (!data) {
-        provideUsername(bot_reply, message);
-      } else {
-        addSnippet(bot_reply, message, newSnippet, userId);
-      }
-    });
-  }
-
-  /**
-   * add a snippet to a team
-   */
-  function addSnippet (bot_reply, message, newSnippet, team) {
-    controller.storage.users.get(team, (err, data) => {
-      if (!data) {
-        teamDoesNotExist(bot_reply, message, team);
-      } else {
-        data.snippets = flatten(getSnippets(data, false), newSnippet);
-        controller.storage.users.save(data, err => {
-          if (err) {
-            bot_reply(message, `Failed to add ${newSnippet}! ${err}`);
-          } else {
-            bot_reply(message, `Added ${newSnippet}!`);
-          }
-        });
-      }
-    });
-  }
-
-  /**
-   * remove a snippet for the current user
-   */
-  function removeSnippetForUser (bot_reply, message, removedSnippet) {
-    const userId = message.user;
-    controller.storage.users.get(userId, (err, data) => {
-      if (!data) {
-        provideUsername(bot_reply, message);
-      } else {
-        removeSnippet(bot_reply, message, removedSnippet, userId);
-      }
-    });
-  }
-
-  /**
-   * remove a snippet from a team
-   */
-  function removeSnippet (bot_reply, message, removedSnippet, team) {
-    controller.storage.users.get(team, (err, data) => {
-      if (!data) {
-        teamDoesNotExist(bot_reply, message, team);
-      } else {
-        data.snippets = _.without(getSnippets(data, false), removedSnippet);
-        controller.storage.users.save(data, err => {
-          if (err) {
-            bot_reply(message, `Failed to remove ${removedSnippet}! ${err}`);
-          } else {
-            bot_reply(message, `Removed ${removedSnippet}!`);
-          }
-        });
       }
     });
   }

@@ -1,6 +1,6 @@
 {
   "name": "github-slack-bot",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Slack bot for your team which integrates with Github",
   "main": "index.js",
   "scripts": {

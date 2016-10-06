@@ -9,7 +9,7 @@ if (!process.env.SLACK_BOT_TOKEN) {
 const _ = require('lodash');
 const githubhook = require('githubhook');
 
-module.exports = controller => {
+module.exports.messenger = controller => {
 
   const bot = controller.spawn({
     token: process.env.SLACK_BOT_TOKEN
@@ -125,24 +125,32 @@ module.exports = controller => {
             !(data.action === 'edited' && _.includes(data.changes.body.from, snippet));
         });
         if (mentioned) {
-          bot.startPrivateConversation({
-            user: user.id
-          }, (err, convo) => {
-            if (err) {
-              console.error('failed to start private conversation', err);
-            } else {
-              convo.say({
-                text: msg_text,
-                attachments: [{
-                  color: color,
-                  title: msg_attachment_title,
-                  title_link: link,
-                  text: msg_attachment_description,
-                  mrkdwn_in: ['text']
-                }]
-              });
-            }
-          });
+          const message = {
+            text: msg_text,
+            attachments: [{
+              color: color,
+              title: msg_attachment_title,
+              title_link: link,
+              text: msg_attachment_description,
+              mrkdwn_in: ['text']
+            }]
+          };
+          if (user.slack_channel) {
+            // message to channel
+            message.channel = user.slack_channel;
+            bot.say(message);
+          } else {
+            // direct message to user
+            bot.startPrivateConversation({
+              user: user.id
+            }, (err, convo) => {
+              if (err) {
+                console.error('failed to start private conversation', err);
+              } else {
+                convo.say(message);
+              }
+            });
+          }
         }
       });
     });
