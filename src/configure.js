@@ -37,6 +37,19 @@ module.exports.messenger = controller => {
   }
 
   function configure (bot, message, team, forUser) {
+    bot.api.reactions.add({
+      timestamp: message.ts,
+      channel: message.channel,
+      name: 'hourglass'
+    }, (err) => {
+      if (err) {
+        console.error('Failed to add emoji reaction :(', err);
+      }
+    });
+
+    // in case it's a slash command, we need to reply with something quickly
+    bot.replyPrivate(message, ':hourglass:');
+
     const helpText = [
       '*Commands*',
       '- `details` - show the text snippets',
