@@ -190,6 +190,11 @@ module.exports.messenger = controller => {
     }
 
     bot.startPrivateConversation(message, (err, convo) => {
+      if (err) {
+        console.error(`Failed to start private conversation: ${err}`);
+        return;
+      }
+
       function beginConfiguration (convo) {
         if (forUser) {
           convo.ask(`Configuring your user ... or ask \`help\`.`, commandPatterns);
