@@ -48,7 +48,7 @@ controller.on('slash_command', (bot, message) => {
     bot.replyPublic(message, helpText);
   }
 });
-controller.hears('help', 'direct_message,direct_mention', (bot, message) => {
+controller.hears('^help$', 'direct_message,direct_mention', (bot, message) => {
   bot.reply(message, helpText);
 });
 

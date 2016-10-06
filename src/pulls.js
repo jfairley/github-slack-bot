@@ -31,7 +31,6 @@ module.exports.messenger = controller => {
 
   const actions = [
     {pattern: /^$/i, callback: listPRsForUser},
-    // {pattern: /^configure(.*)$/i, callback: configure},
     {pattern: /^list (.*)$/i, callback: listPRs},
     {pattern: /^list$/i, callback: listPRsForUser},
     {pattern: /^pulls (.*)$/i, callback: listPRs},

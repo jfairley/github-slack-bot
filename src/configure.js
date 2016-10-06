@@ -20,8 +20,8 @@ module.exports.messenger = controller => {
       // ignore message
     }
   });
-  controller.hears(['configure (.*)'], 'direct_message,direct_mention', configureTeam);
-  controller.hears(['configure'], 'direct_message,direct_mention', configureUser);
+  controller.hears(['^configure (.*)$'], 'direct_message,direct_mention', configureTeam);
+  controller.hears(['^configure\w*$'], 'direct_message,direct_mention', configureUser);
 
   function configureTeam (bot, message) {
     configure(bot, message, message.match[1], false);
