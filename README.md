@@ -71,7 +71,7 @@ If you're running locally, use one of these utilities to expose a port on your l
 ngrok 3420
 ```
 
-[localtunnel](localtunnel.me)
+[localtunnel](https://localtunnel.github.io/www/)
 
 ```bash
 lt --port 3420
