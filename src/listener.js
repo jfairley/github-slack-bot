@@ -122,7 +122,7 @@ module.exports.messenger = controller => {
         let mentioned = _.some(snippets, snippet => {
           return _.includes(msg_attachment_description, snippet) &&
             // message only if snippet was added in change
-            !(data.action === 'edited' && _.includes(_.get(data, 'changes.body.from', snippet));
+            !(data.action === 'edited' && _.includes(_.get(data, 'changes.body.from'), snippet));
         });
         if (mentioned) {
           const message = {
