@@ -50,33 +50,21 @@ module.exports.messenger = controller => {
 
 
   function notifyIssue (data) {
-    let is_comment = _.has(data, 'comment'),
-        is_pull_request = _.has(data, 'pull_request') || _.has(data, 'issue.pull_request'),
-      // combine for convenience, allowing comment data to win if it exists
-        payload = _.assign({}, data.issue, data.pull_request, data.comment),
-        issue_number = payload.number,
-        issue_title = payload.title,
-        link = payload.html_url,
-        repo = data.repository.full_name,
-        msg_text,
-        msg_attachment_title,
-        msg_attachment_description = payload.body,
-        pull_request_from = _.get(data, 'pull_request.head.label'),
-        pull_request_to = _.get(data, 'pull_request.base.label'),
-        pull_request_mergeable_state = _.get(data, 'pull_request.mergeable_state');
+    const is_comment = _.has(data, 'comment'),
+          is_pull_request = _.has(data, 'pull_request') || _.has(data, 'issue.pull_request'),
+          // combine for convenience, allowing comment data to win if it exists
+          payload = _.assign({}, data.issue, data.pull_request, data.comment),
+          issue_number = payload.number,
+          issue_title = payload.title,
+          link = payload.html_url,
+          repo = data.repository.full_name,
+          msg_attachment_description = payload.body,
+          pull_request_from = _.get(data, 'pull_request.head.label'),
+          pull_request_to = _.get(data, 'pull_request.base.label'),
+          pull_request_mergeable_state = _.get(data, 'pull_request.mergeable_state');
 
-    if (is_comment) {
-      msg_text = 'You were mentioned in a comment on *' + repo + '*';
-    } else if (is_pull_request) {
-      msg_text = 'You were mentioned in a pull request for *' + repo + '*';
-    } else {
-      msg_text = 'You were mentioned in an issue for *' + repo + '*';
-    }
-
-    if (pull_request_from && pull_request_to) {
-      msg_text += '\n   _' + pull_request_to + ' :arrow_left: ' + pull_request_from + '_';
-    }
-
+    // build the message attachment title
+    let msg_attachment_title;
     if (_.has(data, 'comment.commit_id')) {
       // this is a commit comment
       msg_attachment_title = data.comment.commit_id;
@@ -85,6 +73,7 @@ module.exports.messenger = controller => {
       msg_attachment_title = '#' + issue_number + ': ' + issue_title;
     }
 
+    // determine message attachment color
     let color;
     switch (pull_request_mergeable_state) {
       case 'clean':
@@ -107,50 +96,88 @@ module.exports.messenger = controller => {
       }
 
       _.forEach(all_user_data, user => {
+        let user_is_author = false;
         let snippets = user.snippets || [];
-        if (user.github_user) {
-          if (user.github_user === data.sender.login) {
+        if (!_.isEmpty(user.github_user)) {
+          if (user.github_user === _.get(data, 'sender.login')) {
             // do not notify of self-initiated actions
             return;
           }
+
+          // detect whether the current user is the issue author
+          if (user.github_user === _.get(data, 'issue.user.login')) {
+            user_is_author = true;
+          }
+
+          // register a direct mention of this user as a snippet
           snippets.push('@' + user.github_user);
         }
-        if (_.isEmpty(snippets)) {
-          return;
-        }
 
-        let mentioned = _.some(snippets, snippet => {
+        // send all messages when the user is the issue author. otherwise check for snippet matches
+        let send_message = user_is_author || _.some(snippets, snippet => {
           return _.includes(msg_attachment_description, snippet) &&
             // message only if snippet was added in change
             !(data.action === 'edited' && _.includes(_.get(data, 'changes.body.from'), snippet));
         });
-        if (mentioned) {
-          const message = {
-            text: msg_text,
-            attachments: [{
-              color: color,
-              title: msg_attachment_title,
-              title_link: link,
-              text: msg_attachment_description,
-              mrkdwn_in: ['text']
-            }]
-          };
-          if (user.slack_channel) {
-            // message to channel
-            message.channel = user.slack_channel;
-            bot.say(message);
+
+        // if nothing matches, do not send the message
+        if (!send_message) {
+          return;
+        }
+
+        // build the message body
+        let msg_text;
+        if (user_is_author) {
+          if (is_comment) {
+            msg_text = 'There is a new comment on *' + repo + '*';
+          } else if (is_pull_request) {
+            msg_text = 'There is activity in a pull request for *' + repo + '*';
           } else {
-            // direct message to user
-            bot.startPrivateConversation({
-              user: user.id
-            }, (err, convo) => {
-              if (err) {
-                console.error('failed to start private conversation', err);
-              } else {
-                convo.say(message);
-              }
-            });
+            msg_text = 'There is activity in an issue for *' + repo + '*';
           }
+        } else {
+          if (is_comment) {
+            msg_text = 'You were mentioned in a comment on *' + repo + '*';
+          } else if (is_pull_request) {
+            msg_text = 'You were mentioned in a pull request for *' + repo + '*';
+          } else {
+            msg_text = 'You were mentioned in an issue for *' + repo + '*';
+          }
+        }
+
+        // for pull requests, add to/from information
+        if (pull_request_from && pull_request_to) {
+          msg_text += '\n   _' + pull_request_to + ' :arrow_left: ' + pull_request_from + '_';
+        }
+
+        // create the message
+        const message = {
+          text: msg_text,
+          attachments: [{
+            color: color,
+            title: msg_attachment_title,
+            title_link: link,
+            text: msg_attachment_description,
+            mrkdwn_in: ['text']
+          }]
+        };
+
+        // send the message
+        if (user.slack_channel) {
+          // message to channel
+          message.channel = user.slack_channel;
+          bot.say(message);
+        } else {
+          // direct message to user
+          bot.startPrivateConversation({
+            user: user.id
+          }, (err, convo) => {
+            if (err) {
+              console.error('failed to start private conversation', err);
+            } else {
+              convo.say(message);
+            }
+          });
         }
       });
     });
