@@ -201,8 +201,24 @@ module.exports.messenger = controller => {
       if (!data) {
         teamDoesNotExist(bot_reply, message, team)
       } else {
-        const snippets = getSnippets(data, true);
-        bot_reply(message, `Details for ${team}:\n${snippets.map(snippet => ` - ${snippet}`).join('\n')}`);
+        const messages = [];
+        // github username ?
+        if (!_.isEmpty(data.github_user)) {
+          messages.push(`github username: \`${data.github_user}\``);
+        }
+        // slack channel ?
+        if (!_.isEmpty(data.slack_channel)) {
+          messages.push(`slack channel: \`${data.slack_channel}\``);
+        }
+        // snippets ?
+        if (!_.isEmpty(data.snippets)) {
+          messages.push(`snippets: \`${data.snippets.join('`, `')}\``);
+        }
+        // default message
+        if (_.isEmpty(messages)) {
+          messages.push('_not configured_');
+        }
+        bot_reply(message, messages.join('\n'));
       }
     });
   }
