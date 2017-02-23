@@ -129,7 +129,7 @@ module.exports.messenger = controller => {
             unknownInput(response, convo);
             return;
           }
-          const channel = response.match[1];
+          const channel = _.trimStart(response.match[1], '# ');
           controller.storage.users.get(team, (err, data) => {
             data.slack_channel = channel;
             controller.storage.users.save(data, err => {
