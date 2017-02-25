@@ -50,6 +50,13 @@ module.exports.messenger = controller => {
 
 
   function notifyIssue (data) {
+    // ignore automation users
+    const sender = data.sender;
+    if (sender && sender.type !== 'User') {
+      console.log('Ignoring activity from non-user:', sender.login);
+      return;
+    }
+
     const is_comment = _.has(data, 'comment'),
           is_pull_request = _.has(data, 'pull_request') || _.has(data, 'issue.pull_request'),
           // combine for convenience, allowing comment data to win if it exists
