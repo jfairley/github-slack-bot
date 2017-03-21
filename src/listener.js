@@ -106,7 +106,7 @@ module.exports.messenger = controller => {
         let user_is_author = false;
         let snippets = user.snippets || [];
         if (!_.isEmpty(user.github_user)) {
-          if (user.github_user === _.get(data, 'sender.login')) {
+          if (user.github_user === sender.login) {
             // do not notify of self-initiated actions
             return;
           }
@@ -136,25 +136,25 @@ module.exports.messenger = controller => {
         let msg_text;
         if (user_is_author) {
           if (is_comment) {
-            msg_text = 'There is a new comment on *' + repo + '*';
+            msg_text = `There is a new comment on *${repo}* from *${sender.login}*`;
           } else if (is_pull_request) {
-            msg_text = 'There is activity in a pull request for *' + repo + '*';
+            msg_text = `There is activity in a pull request for *${repo}* from *${sender.login}*`;
           } else {
-            msg_text = 'There is activity in an issue for *' + repo + '*';
+            msg_text = `There is activity in an issue for *${repo}* from *${sender.login}*`;
           }
         } else {
           if (is_comment) {
-            msg_text = 'You were mentioned in a comment on *' + repo + '*';
+            msg_text = `You were mentioned in a comment on *${repo}* by *${sender.login}*`;
           } else if (is_pull_request) {
-            msg_text = 'You were mentioned in a pull request for *' + repo + '*';
+            msg_text = `You were mentioned in a pull request for *${repo}* by *${sender.login}*`;
           } else {
-            msg_text = 'You were mentioned in an issue for *' + repo + '*';
+            msg_text = `You were mentioned in an issue for *${repo}* by *${sender.login}*`;
           }
         }
 
         // for pull requests, add to/from information
         if (pull_request_from && pull_request_to) {
-          msg_text += '\n   _' + pull_request_to + ' :arrow_left: ' + pull_request_from + '_';
+          msg_text += `\n   _${pull_request_to} :arrow_left: ${pull_request_from}_`;
         }
 
         // create the message
