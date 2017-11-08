@@ -47,10 +47,9 @@ module.exports.messenger = controller => {
           }
           break;
       }
+    } catch (err) {
+      console.error(err);
     }
-   catch (err) {
-     console.error(err);
-   }
   });
 
 
