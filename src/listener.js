@@ -24,28 +24,33 @@ module.exports.messenger = controller => {
   github.listen();
 
   github.on('*', (event, repo, ref, data) => {
-    switch (event) {
-      case 'issues':
-      case 'pull_request':
-        switch (data.action) {
-          case 'opened':
-          case 'reopened':
-          case 'edited':
-            notifyIssue(data);
-            break;
-        }
-        break;
-      case 'commit_comment':
-      case 'issue_comment':
-      case 'pull_request_review_comment':
-        switch (data.action) {
-          case 'created':
-          case 'edited':
-            notifyIssue(data);
-            break;
-        }
-        break;
+    try {
+      switch (event) {
+        case 'issues':
+        case 'pull_request':
+          switch (data.action) {
+            case 'opened':
+            case 'reopened':
+            case 'edited':
+              notifyIssue(data);
+              break;
+          }
+          break;
+        case 'commit_comment':
+        case 'issue_comment':
+        case 'pull_request_review_comment':
+          switch (data.action) {
+            case 'created':
+            case 'edited':
+              notifyIssue(data);
+              break;
+          }
+          break;
+      }
     }
+   catch (err) {
+     console.error(err);
+   }
   });
 
 
