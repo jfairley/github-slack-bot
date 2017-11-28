@@ -1,5 +1,6 @@
 # Slack Bot for Github
 
+[![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/github-slack-bot/Lobby)
 
 ## Runtime Environment
 
