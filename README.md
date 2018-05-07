@@ -1,5 +1,6 @@
 # Slack Bot for Github
 
+[![CircleCI](https://circleci.com/gh/jfairley/github-slack-bot.svg?style=svg)](https://circleci.com/gh/jfairley/github-slack-bot)
 [![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/github-slack-bot/Lobby)
 
 ## Runtime Environment
