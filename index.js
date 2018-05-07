@@ -29,7 +29,7 @@ controller.setupWebserver(slashCommandPort, (err, webserver) => controller.creat
 // initialize help message listener
 function joinCommands (commands) {
   return commands
-    .map(command => `- \`${command.command || command.commands.join('\` / \`')}\` - ${command.message}`)
+    .map(command => `- \`${command.command || command.commands.join('` / `')}\` - ${command.message}`)
     .join('\n');
 }
 const helpText = `*Summary*

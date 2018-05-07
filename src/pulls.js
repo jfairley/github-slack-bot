@@ -42,7 +42,7 @@ module.exports.messenger = controller => {
   ];
 
   controller.on('slash_command', (bot, message) => handlePattern(bot, bot.replyPublicDelayed, message));
-  controller.hears('^([^\/].*)$', 'direct_message,direct_mention', (bot, message) => handlePattern(bot, bot.reply, message));
+  controller.hears('^([^/].*)$', 'direct_message,direct_mention', (bot, message) => handlePattern(bot, bot.reply, message));
 
   function handlePattern (bot, bot_reply, message) {
     bot.api.reactions.add({
