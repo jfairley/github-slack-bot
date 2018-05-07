@@ -13,6 +13,7 @@ jobs:
       - restore_cache:
           keys:
             - node8-{{ checksum "package.json" }}
+            - node8-
 
       - run: npm install --quiet
 
