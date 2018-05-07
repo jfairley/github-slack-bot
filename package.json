@@ -14,7 +14,7 @@
     "bluebird": "^3.4.6",
     "botkit": "^0.6.6",
     "githubhook": "^1.9.3",
-    "lodash": "^4.15.0"
+    "lodash": "^4.17.10"
   },
   "devDependencies": {
     "eslint": "^3.4.0",
