@@ -6,13 +6,11 @@ const configure = require('./src/configure');
 const pulls = require('./src/pulls');
 const listener = require('./src/listener');
 
-
 // startup logs
 console.log('Starting Botkit...');
 if (process.env.SLACK_BOT_STORAGE) {
   console.log('Using persistent storage location:', process.env.SLACK_BOT_STORAGE);
 }
-
 
 // create shared slack bot controller
 const controller = Botkit.slackbot({
@@ -20,14 +18,12 @@ const controller = Botkit.slackbot({
   json_file_store: process.env.SLACK_BOT_STORAGE
 });
 
-
 // setup slack command webserver
 const slashCommandPort = process.env.SLACK_BOT_PORT || 3000;
 controller.setupWebserver(slashCommandPort, (err, webserver) => controller.createWebhookEndpoints(webserver));
 
-
 // initialize help message listener
-function joinCommands (commands) {
+function joinCommands(commands) {
   return commands
     .map(command => `- \`${command.command || command.commands.join('` / `')}\` - ${command.message}`)
     .join('\n');
@@ -51,7 +47,6 @@ controller.on('slash_command', (bot, message) => {
 controller.hears('^help$', 'direct_message,direct_mention', (bot, message) => {
   bot.reply(message, helpText);
 });
-
 
 // initialize other listeners
 configure.messenger(controller);

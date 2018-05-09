@@ -10,50 +10,60 @@ const _ = require('lodash');
 const request = require('superagent');
 const Promise = require('bluebird');
 
-module.exports.commands = [{
-  command: 'list',
-  message: 'show matching issues and pull-requests for the current user'
-}, {
-  commands: ['list <team>', '<team>'],
-  message: 'show matching issues and pull-requests for the specified team'
-}, {
-  command: 'details',
-  message: 'show the configuration for the current user'
-}, {
-  command: 'details <team>',
-  message: 'show the configuration for the specified team'
-}, {
-  command: 'teams',
-  message: 'show all configured users and teams'
-}];
+module.exports.commands = [
+  {
+    command: 'list',
+    message: 'show matching issues and pull-requests for the current user'
+  },
+  {
+    commands: ['list <team>', '<team>'],
+    message: 'show matching issues and pull-requests for the specified team'
+  },
+  {
+    command: 'details',
+    message: 'show the configuration for the current user'
+  },
+  {
+    command: 'details <team>',
+    message: 'show the configuration for the specified team'
+  },
+  {
+    command: 'teams',
+    message: 'show all configured users and teams'
+  }
+];
 
 module.exports.messenger = controller => {
-
   const actions = [
-    {pattern: /^$/i, callback: listPRsForUser},
-    {pattern: /^list (.*)$/i, callback: listPRs},
-    {pattern: /^list$/i, callback: listPRsForUser},
-    {pattern: /^pulls (.*)$/i, callback: listPRs},
-    {pattern: /^pulls$/i, callback: listPRsForUser},
-    {pattern: /^teams$/i, callback: listTeams},
-    {pattern: /^details (.*)$/i, callback: teamDetails},
-    {pattern: /^details$/i, callback: teamDetailsForUser},
-    {pattern: /^(.*)$/i, callback: handleUnrecognized}
+    { pattern: /^$/i, callback: listPRsForUser },
+    { pattern: /^list (.*)$/i, callback: listPRs },
+    { pattern: /^list$/i, callback: listPRsForUser },
+    { pattern: /^pulls (.*)$/i, callback: listPRs },
+    { pattern: /^pulls$/i, callback: listPRsForUser },
+    { pattern: /^teams$/i, callback: listTeams },
+    { pattern: /^details (.*)$/i, callback: teamDetails },
+    { pattern: /^details$/i, callback: teamDetailsForUser },
+    { pattern: /^(.*)$/i, callback: handleUnrecognized }
   ];
 
   controller.on('slash_command', (bot, message) => handlePattern(bot, bot.replyPublicDelayed, message));
-  controller.hears('^([^/].*)$', 'direct_message,direct_mention', (bot, message) => handlePattern(bot, bot.reply, message));
+  controller.hears('^([^/].*)$', 'direct_message,direct_mention', (bot, message) =>
+    handlePattern(bot, bot.reply, message)
+  );
 
-  function handlePattern (bot, bot_reply, message) {
-    bot.api.reactions.add({
-      timestamp: message.ts,
-      channel: message.channel,
-      name: 'hourglass'
-    }, (err) => {
-      if (err) {
-        console.error('Failed to add emoji reaction :(', err);
+  function handlePattern(bot, bot_reply, message) {
+    bot.api.reactions.add(
+      {
+        timestamp: message.ts,
+        channel: message.channel,
+        name: 'hourglass'
+      },
+      err => {
+        if (err) {
+          console.error('Failed to add emoji reaction :(', err);
+        }
       }
-    });
+    );
 
     // in case it's a slash command, we need to reply with something quickly
     bot.replyPrivate(message, ':hourglass:');
@@ -69,7 +79,7 @@ module.exports.messenger = controller => {
     bot_reply(message, 'Error: Unknown command `' + message.text + '`');
   }
 
-  function handleUnrecognized (bot_reply, message, text) {
+  function handleUnrecognized(bot_reply, message, text) {
     controller.storage.users.get(text, (err, data) => {
       if (!data) {
         bot_reply(message, 'Unrecognized input. Ask for `help` to see a list of commands.');
@@ -82,7 +92,7 @@ module.exports.messenger = controller => {
   /**
    * search for PRs for the current user
    */
-  function listPRsForUser (bot_reply, message) {
+  function listPRsForUser(bot_reply, message) {
     const userId = message.user;
     controller.storage.users.get(userId, (err, data) => {
       if (!data) {
@@ -96,7 +106,7 @@ module.exports.messenger = controller => {
   /**
    * search for PRs
    */
-  function listPRs (bot_reply, message, team) {
+  function listPRs(bot_reply, message, team) {
     controller.storage.users.get(team, (err, data) => {
       if (!data) {
         return teamDoesNotExist(bot_reply, message, team);
@@ -106,66 +116,76 @@ module.exports.messenger = controller => {
         .then(body => _.values(groupByRepositoryUrl(body)))
         .map(group => filterUninterestingLinks(group, snippets))
         .filter(group => !_.isEmpty(group))
-        .map(group => Promise.map(group, body => {
-          if (_.has(body, 'pull_request')) {
-            return request.get(body.pull_request.url)
-              .set('Authorization', authorization)
-              .then(res => {
-                body.pull_request = res.body;
-                return body;
-              });
-          } else {
-            return body;
-          }
-        }))
-        .map(group => new Promise((resolve, reject) => {
-          bot_reply(message, {
-            text: `*${group[0].repository.name}*`,
-            attachments: group.map(resp => {
-              const link = `<${resp.html_url}|${resp.title}>`;
-              const extras = [];
-              // has assignee?
-              if (_.has(resp, 'assignee.login')) {
-                extras.push({
-                  title: 'Assignee',
-                  value: resp.assignee.login,
-                  short: true
+        .map(group =>
+          Promise.map(group, body => {
+            if (_.has(body, 'pull_request')) {
+              return request
+                .get(body.pull_request.url)
+                .set('Authorization', authorization)
+                .then(res => {
+                  body.pull_request = res.body;
+                  return body;
                 });
-              }
-              // has labels?
-              if (!_.isEmpty(resp.labels)) {
-                extras.push({
-                  title: `Label${1 < resp.labels.length ? 's' : ''}`,
-                  value: resp.labels.map(l => l.name).join(', '),
-                  short: true
-                })
-              }
+            } else {
+              return body;
+            }
+          })
+        )
+        .map(
+          group =>
+            new Promise((resolve, reject) => {
+              bot_reply(
+                message,
+                {
+                  text: `*${group[0].repository.name}*`,
+                  attachments: group.map(resp => {
+                    const link = `<${resp.html_url}|${resp.title}>`;
+                    const extras = [];
+                    // has assignee?
+                    if (_.has(resp, 'assignee.login')) {
+                      extras.push({
+                        title: 'Assignee',
+                        value: resp.assignee.login,
+                        short: true
+                      });
+                    }
+                    // has labels?
+                    if (!_.isEmpty(resp.labels)) {
+                      extras.push({
+                        title: `Label${1 < resp.labels.length ? 's' : ''}`,
+                        value: resp.labels.map(l => l.name).join(', '),
+                        short: true
+                      });
+                    }
 
-              let color;
-              switch (_.get(resp, 'pull_request.mergeable_state')) {
-                case 'clean':
-                  color = 'good';
-                  break;
-                case 'unknown':
-                  color = 'warning';
-                  break;
-                case 'unstable':
-                case 'dirty':
-                  color = 'danger';
-                  break;
-              }
+                    let color;
+                    switch (_.get(resp, 'pull_request.mergeable_state')) {
+                      case 'clean':
+                        color = 'good';
+                        break;
+                      case 'unknown':
+                        color = 'warning';
+                        break;
+                      case 'unstable':
+                      case 'dirty':
+                        color = 'danger';
+                        break;
+                    }
 
-              // render extras as multiline text for brevity
-              let moreTexts = extras.map(e => `- *${e.title}*: ${e.value}`);
-              return {
-                color: color,
-                text: `${link} (${resp.user.login})\n${moreTexts.join('\n')}`,
-                mrkdwn_in: ['text']
-              }
+                    // render extras as multiline text for brevity
+                    let moreTexts = extras.map(e => `- *${e.title}*: ${e.value}`);
+                    return {
+                      color: color,
+                      text: `${link} (${resp.user.login})\n${moreTexts.join('\n')}`,
+                      mrkdwn_in: ['text']
+                    };
+                  })
+                },
+                err => (err ? reject(err) : resolve())
+              );
             })
-          }, err => err ? reject(err) : resolve());
-        }))
-        .then(data => _.isEmpty(data) ? bot_reply(message, `No matching issues!! You're in the clear.`) : data)
+        )
+        .then(data => (_.isEmpty(data) ? bot_reply(message, `No matching issues!! You're in the clear.`) : data))
         .catch(err => bot_reply(message, `Unhandled error:\n${err}`));
     });
   }
@@ -173,7 +193,7 @@ module.exports.messenger = controller => {
   /**
    * show configured teams
    */
-  function listTeams (bot_reply, message) {
+  function listTeams(bot_reply, message) {
     controller.storage.users.all((err, data) => {
       bot_reply(message, `Configured teams:\n${data.map(team => ` - ${team.id}`).join('\n')}`);
     });
@@ -182,7 +202,7 @@ module.exports.messenger = controller => {
   /**
    * show details for the current user
    */
-  function teamDetailsForUser (bot_reply, message) {
+  function teamDetailsForUser(bot_reply, message) {
     const userId = message.user;
     controller.storage.users.get(userId, (err, data) => {
       if (!data) {
@@ -196,10 +216,10 @@ module.exports.messenger = controller => {
   /**
    * show details for a list of snippets
    */
-  function teamDetails (bot_reply, message, team) {
+  function teamDetails(bot_reply, message, team) {
     controller.storage.users.get(team, (err, data) => {
       if (!data) {
-        teamDoesNotExist(bot_reply, message, team)
+        teamDoesNotExist(bot_reply, message, team);
       } else {
         const messages = [];
         // github username ?
@@ -223,20 +243,20 @@ module.exports.messenger = controller => {
     });
   }
 
-  function provideUsername (bot_reply, message) {
+  function provideUsername(bot_reply, message) {
     return bot_reply(message, `Please provide your username: \`username <github username>\``);
   }
 
-  function teamDoesNotExist (bot_reply, message, team) {
+  function teamDoesNotExist(bot_reply, message, team) {
     return bot_reply(message, `Error: Team does not exist. See \`new team ${team}\`.`);
   }
 };
 
-function flatten () {
+function flatten() {
   return _.compact(_.uniq(_.flatten(arguments)));
 }
 
-function getSnippets (data, withUser) {
+function getSnippets(data, withUser) {
   const snippets = _.get(data, 'snippets', []);
   return withUser ? flatten(snippets, _.get(data, 'github_user')) : snippets;
 }
@@ -244,8 +264,9 @@ function getSnippets (data, withUser) {
 /**
  * Fetch organization issues
  */
-function fetchOrgIssues () {
-  return request.get('https://api.github.com/orgs/levelsbeyond/issues?filter=all')
+function fetchOrgIssues() {
+  return request
+    .get('https://api.github.com/orgs/levelsbeyond/issues?filter=all')
     .set('Authorization', authorization)
     .then(res => res.body);
 }
@@ -254,7 +275,7 @@ function fetchOrgIssues () {
  * return sorted array of arrays
  * @param pulls
  */
-function groupByRepositoryUrl (pulls) {
+function groupByRepositoryUrl(pulls) {
   pulls = _.sortBy(pulls, 'repository_url');
   return _.groupBy(pulls, 'repository_url');
 }
@@ -265,14 +286,14 @@ function groupByRepositoryUrl (pulls) {
  * @param snippets
  * @returns {Array}
  */
-function filterUninterestingLinks (body, snippets) {
-  return body
-    .filter(resp =>
-      snippets.some(snippet =>
-        -1 < resp.title.indexOf(snippet)
-        || -1 < resp.body.indexOf(snippet)
-        || _.isEqual(_.get(resp, 'assignee.login'), _.trim(snippet, ' @'))
-        || _.isEqual(_.get(resp, 'user.login'), _.trim(snippet, ' @'))
-      )
-    );
+function filterUninterestingLinks(body, snippets) {
+  return body.filter(resp =>
+    snippets.some(
+      snippet =>
+        -1 < resp.title.indexOf(snippet) ||
+        -1 < resp.body.indexOf(snippet) ||
+        _.isEqual(_.get(resp, 'assignee.login'), _.trim(snippet, ' @')) ||
+        _.isEqual(_.get(resp, 'user.login'), _.trim(snippet, ' @'))
+    )
+  );
 }

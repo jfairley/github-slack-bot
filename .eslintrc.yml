@@ -1,26 +1,5 @@
 extends:
-  eslint:recommended
+  plugin:prettier/recommended
 env:
   es6: true
   node: true
-rules:
-  eqeqeq:
-    - 2
-    - smart
-  indent:
-    - 2
-    - 2
-    - SwitchCase: 1
-      VariableDeclarator:
-        var: 2
-        let: 2
-        const: 3
-  no-console: 0
-  no-trailing-spaces: 2
-  space-before-blocks: 2
-  space-before-function-paren: 2
-  quotes:
-    - 1
-    - single
-    - allowTemplateLiterals: true
-      avoidEscape: true

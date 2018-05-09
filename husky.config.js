@@ -1,6 +1,6 @@
 module.exports = {
   hooks: {
     'commit-msg': 'commitlint -e $GIT_PARAMS',
-    'pre-commit': 'fixpack --quiet'
+    'pre-commit': 'fixpack && lint-staged'
   }
 };

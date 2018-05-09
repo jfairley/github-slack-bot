@@ -5,16 +5,15 @@ if (!process.env.SLACK_BOT_TOKEN) {
   process.exit(1);
 }
 
-
 const _ = require('lodash');
 const githubhook = require('githubhook');
 
 module.exports.messenger = controller => {
-
-  const bot = controller.spawn({
-    token: process.env.SLACK_BOT_TOKEN
-  }).startRTM();
-
+  const bot = controller
+    .spawn({
+      token: process.env.SLACK_BOT_TOKEN
+    })
+    .startRTM();
 
   // github hooks
   const github = githubhook({
@@ -52,8 +51,7 @@ module.exports.messenger = controller => {
     }
   });
 
-
-  function notifyIssue (data) {
+  function notifyIssue(data) {
     // ignore automation users
     const sender = data.sender;
     if (sender && sender.type !== 'User') {
@@ -62,17 +60,17 @@ module.exports.messenger = controller => {
     }
 
     const is_comment = _.has(data, 'comment'),
-          is_pull_request = _.has(data, 'pull_request') || _.has(data, 'issue.pull_request'),
-          // combine for convenience, allowing comment data to win if it exists
-          payload = _.assign({}, data.issue, data.pull_request, data.comment),
-          issue_number = payload.number,
-          issue_title = payload.title,
-          link = payload.html_url,
-          repo = data.repository.full_name,
-          msg_attachment_description = payload.body,
-          pull_request_from = _.get(data, 'pull_request.head.label'),
-          pull_request_to = _.get(data, 'pull_request.base.label'),
-          pull_request_mergeable_state = _.get(data, 'pull_request.mergeable_state');
+      is_pull_request = _.has(data, 'pull_request') || _.has(data, 'issue.pull_request'),
+      // combine for convenience, allowing comment data to win if it exists
+      payload = _.assign({}, data.issue, data.pull_request, data.comment),
+      issue_number = payload.number,
+      issue_title = payload.title,
+      link = payload.html_url,
+      repo = data.repository.full_name,
+      msg_attachment_description = payload.body,
+      pull_request_from = _.get(data, 'pull_request.head.label'),
+      pull_request_to = _.get(data, 'pull_request.base.label'),
+      pull_request_mergeable_state = _.get(data, 'pull_request.mergeable_state');
 
     // build the message attachment title
     let msg_attachment_title;
@@ -99,7 +97,6 @@ module.exports.messenger = controller => {
         break;
     }
 
-
     controller.storage.users.all((err, all_user_data) => {
       if (err) {
         console.error(err);
@@ -125,11 +122,15 @@ module.exports.messenger = controller => {
         }
 
         // send all messages when the user is the issue author. otherwise check for snippet matches
-        let send_message = user_is_author || _.some(snippets, snippet => {
-          return _.includes(msg_attachment_description, snippet) &&
-            // message only if snippet was added in change
-            !(data.action === 'edited' && _.includes(_.get(data, 'changes.body.from'), snippet));
-        });
+        let send_message =
+          user_is_author ||
+          _.some(snippets, snippet => {
+            return (
+              _.includes(msg_attachment_description, snippet) &&
+              // message only if snippet was added in change
+              !(data.action === 'edited' && _.includes(_.get(data, 'changes.body.from'), snippet))
+            );
+          });
 
         // if nothing matches, do not send the message
         if (!send_message) {
@@ -164,13 +165,15 @@ module.exports.messenger = controller => {
         // create the message
         const message = {
           text: msg_text,
-          attachments: [{
-            color: color,
-            title: msg_attachment_title,
-            title_link: link,
-            text: msg_attachment_description,
-            mrkdwn_in: ['text']
-          }]
+          attachments: [
+            {
+              color: color,
+              title: msg_attachment_title,
+              title_link: link,
+              text: msg_attachment_description,
+              mrkdwn_in: ['text']
+            }
+          ]
         };
 
         // send the message
@@ -180,15 +183,18 @@ module.exports.messenger = controller => {
           bot.say(message);
         } else {
           // direct message to user
-          bot.startPrivateConversation({
-            user: user.id
-          }, (err, convo) => {
-            if (err) {
-              console.error('failed to start private conversation', err);
-            } else {
-              convo.say(message);
+          bot.startPrivateConversation(
+            {
+              user: user.id
+            },
+            (err, convo) => {
+              if (err) {
+                console.error('failed to start private conversation', err);
+              } else {
+                convo.say(message);
+              }
             }
-          });
+          );
         }
       });
     });

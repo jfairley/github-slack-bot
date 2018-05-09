@@ -1,15 +1,17 @@
 const _ = require('lodash');
 
-module.exports.commands = [{
-  command: 'configure',
-  message: 'configure settings for the current user'
-}, {
-  command: 'configure <team>',
-  message: 'configure settings for the specified team'
-}];
+module.exports.commands = [
+  {
+    command: 'configure',
+    message: 'configure settings for the current user'
+  },
+  {
+    command: 'configure <team>',
+    message: 'configure settings for the specified team'
+  }
+];
 
 module.exports.messenger = controller => {
-
   controller.on('slash_command', (bot, message) => {
     const text = _.trim(message.text);
     if (_.eq(text, 'configure')) {
@@ -23,29 +25,32 @@ module.exports.messenger = controller => {
   controller.hears(['^configure (.*)$'], 'direct_message,direct_mention', configureTeam);
   controller.hears(['^configure\\w*$'], 'direct_message,direct_mention', configureUser);
 
-  function configureTeam (bot, message) {
+  function configureTeam(bot, message) {
     configure(bot, message, message.match[1], false);
   }
 
-  function configureUser (bot, message) {
+  function configureUser(bot, message) {
     configure(bot, message, message.user, true);
   }
 
-  function done (response, convo) {
+  function done(response, convo) {
     convo.say(`OK, you're done!`);
     convo.next();
   }
 
-  function configure (bot, message, team, forUser) {
-    bot.api.reactions.add({
-      timestamp: message.ts,
-      channel: message.channel,
-      name: 'hourglass'
-    }, (err) => {
-      if (err) {
-        console.error('Failed to add emoji reaction :(', err);
+  function configure(bot, message, team, forUser) {
+    bot.api.reactions.add(
+      {
+        timestamp: message.ts,
+        channel: message.channel,
+        name: 'hourglass'
+      },
+      err => {
+        if (err) {
+          console.error('Failed to add emoji reaction :(', err);
+        }
       }
-    });
+    );
 
     // in case it's a slash command, we need to reply with something quickly
     bot.replyPrivate(message, ':hourglass:');
@@ -114,7 +119,7 @@ module.exports.messenger = controller => {
               if (err) {
                 convo.ask(`Failed to save username: ${err}`, commandPatterns);
               } else {
-                convo.ask(`Github username registered: _${username}_!`, commandPatterns)
+                convo.ask(`Github username registered: _${username}_!`, commandPatterns);
               }
               convo.next();
             });
@@ -136,7 +141,7 @@ module.exports.messenger = controller => {
               if (err) {
                 convo.ask(`Failed to save channel: ${err}`, commandPatterns);
               } else {
-                convo.ask(`Slack channel registered: _${channel}_!`, commandPatterns)
+                convo.ask(`Slack channel registered: _${channel}_!`, commandPatterns);
               }
               convo.next();
             });
@@ -183,7 +188,7 @@ module.exports.messenger = controller => {
       }
     ];
 
-    function unknownInput (response, convo) {
+    function unknownInput(response, convo) {
       // just repeat the question
       convo.ask(`I didn't get that. Try \`help\` for a list of commands.`, commandPatterns);
       convo.next();
@@ -195,7 +200,7 @@ module.exports.messenger = controller => {
         return;
       }
 
-      function beginConfiguration (convo) {
+      function beginConfiguration(convo) {
         if (forUser) {
           convo.ask(`Configuring your user ... or ask \`help\`.`, commandPatterns);
         } else {
@@ -204,7 +209,7 @@ module.exports.messenger = controller => {
         convo.next();
       }
 
-      function saveHandler (err) {
+      function saveHandler(err) {
         if (err) {
           convo.say(`Failed to save data: ${err}`);
           convo.next();
@@ -220,10 +225,13 @@ module.exports.messenger = controller => {
         } else if (forUser) {
           // create new user config
           convo.ask(`To get started, please enter your github username...`, response => {
-            controller.storage.users.save({
-              id: team,
-              github_user: response.text
-            }, saveHandler);
+            controller.storage.users.save(
+              {
+                id: team,
+                github_user: response.text
+              },
+              saveHandler
+            );
           });
           convo.next();
         } else {
@@ -236,9 +244,12 @@ module.exports.messenger = controller => {
             {
               pattern: bot.utterances.yes,
               callback: () => {
-                controller.storage.users.save({
-                  id: team
-                }, saveHandler);
+                controller.storage.users.save(
+                  {
+                    id: team
+                  },
+                  saveHandler
+                );
               }
             },
             {
