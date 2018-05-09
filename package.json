@@ -18,7 +18,7 @@
     "eslint-config-prettier": "2.9.0",
     "eslint-plugin-prettier": "2.6.0",
     "fixpack": "2.3.1",
-    "husky": "1.0.0-rc.3",
+    "husky": "1.0.0-rc.4",
     "lint-staged": "7.1.0",
     "prettier": "1.12.1",
     "superagent": "3.8.3"
