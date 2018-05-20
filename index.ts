@@ -1,10 +1,10 @@
 'use strict';
 
-const Botkit = require('botkit');
-const _ = require('lodash');
-const configure = require('./src/configure');
-const pulls = require('./src/pulls');
-const listener = require('./src/listener');
+import { slackbot } from 'botkit';
+import { eq, trim } from 'lodash';
+import * as configure from './src/configure';
+import * as listener from './src/listener';
+import * as pulls from './src/pulls';
 
 // startup logs
 console.log('Starting Botkit...');
@@ -13,7 +13,7 @@ if (process.env.SLACK_BOT_STORAGE) {
 }
 
 // create shared slack bot controller
-const controller = Botkit.slackbot({
+const controller = slackbot({
   debug: process.env.SLACK_BOT_DEBUG === 'true',
   json_file_store: process.env.SLACK_BOT_STORAGE
 });
@@ -40,7 +40,7 @@ ${joinCommands(pulls.commands)}
 `;
 
 controller.on('slash_command', (bot, message) => {
-  if (_.eq(_.trim(message.text), 'help')) {
+  if (eq(trim(message.text), 'help')) {
     bot.replyPublic(message, helpText);
   }
 });

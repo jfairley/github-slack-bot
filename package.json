@@ -14,6 +14,9 @@
     "@commitlint/cli": "6.2.0",
     "@commitlint/config-conventional": "6.1.3",
     "@commitlint/prompt-cli": "6.1.3",
+    "@types/bluebird": "3.5.20",
+    "@types/lodash": "4.14.109",
+    "@types/superagent": "3.5.8",
     "eslint": "4.19.1",
     "eslint-config-prettier": "2.9.0",
     "eslint-plugin-prettier": "2.6.0",
@@ -21,7 +24,10 @@
     "husky": "1.0.0-rc.3",
     "lint-staged": "7.1.1",
     "prettier": "1.12.1",
-    "superagent": "3.8.3"
+    "superagent": "3.8.3",
+    "tslint": "5.10.0",
+    "tslint-config-prettier": "1.12.0",
+    "typescript": "2.8.3"
   },
   "homepage": "https://github.com/jfairley/github-slack-bot#readme",
   "keywords": [
@@ -36,10 +42,11 @@
     "url": "https://github.com/jfairley/github-slack-bot.git"
   },
   "scripts": {
+    "build": "tsc",
     "commit": "commit",
     "fixpack": "fixpack",
     "lint": "eslint *.js src --fix",
-    "prestart": "npm run lint",
+    "prestart": "npm run lint && npm run build",
     "start": "node index.js"
   }
 }

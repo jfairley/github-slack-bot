@@ -1,14 +1,16 @@
 'use strict';
 
+import { SlackMessage } from 'botkit';
+import { assign, forEach, get, has, includes, isEmpty, some } from 'lodash';
+
 if (!process.env.SLACK_BOT_TOKEN) {
   console.error('Error: Specify SLACK_BOT_TOKEN in environment');
   process.exit(1);
 }
 
-const _ = require('lodash');
 const githubhook = require('githubhook');
 
-module.exports.messenger = controller => {
+export const messenger = controller => {
   const bot = controller
     .spawn({
       token: process.env.SLACK_BOT_TOKEN
@@ -59,22 +61,22 @@ module.exports.messenger = controller => {
       return;
     }
 
-    const is_comment = _.has(data, 'comment'),
-      is_pull_request = _.has(data, 'pull_request') || _.has(data, 'issue.pull_request'),
+    const is_comment = has(data, 'comment'),
+      is_pull_request = has(data, 'pull_request') || has(data, 'issue.pull_request'),
       // combine for convenience, allowing comment data to win if it exists
-      payload = _.assign({}, data.issue, data.pull_request, data.comment),
+      payload = assign({}, data.issue, data.pull_request, data.comment),
       issue_number = payload.number,
       issue_title = payload.title,
       link = payload.html_url,
       repo = data.repository.full_name,
       msg_attachment_description = payload.body,
-      pull_request_from = _.get(data, 'pull_request.head.label'),
-      pull_request_to = _.get(data, 'pull_request.base.label'),
-      pull_request_mergeable_state = _.get(data, 'pull_request.mergeable_state');
+      pull_request_from = get(data, 'pull_request.head.label'),
+      pull_request_to = get(data, 'pull_request.base.label'),
+      pull_request_mergeable_state = get(data, 'pull_request.mergeable_state');
 
     // build the message attachment title
     let msg_attachment_title;
-    if (_.has(data, 'comment.commit_id')) {
+    if (has(data, 'comment.commit_id')) {
       // this is a commit comment
       msg_attachment_title = data.comment.commit_id;
     } else {
@@ -103,17 +105,17 @@ module.exports.messenger = controller => {
         return;
       }
 
-      _.forEach(all_user_data, user => {
+      forEach(all_user_data, user => {
         let user_is_author = false;
         let snippets = user.snippets || [];
-        if (!_.isEmpty(user.github_user)) {
+        if (!isEmpty(user.github_user)) {
           if (user.github_user === sender.login) {
             // do not notify of self-initiated actions
             return;
           }
 
           // detect whether the current user is the issue author
-          if (user.github_user === _.get(data, 'issue.user.login')) {
+          if (user.github_user === get(data, 'issue.user.login')) {
             user_is_author = true;
           }
 
@@ -124,11 +126,11 @@ module.exports.messenger = controller => {
         // send all messages when the user is the issue author. otherwise check for snippet matches
         let send_message =
           user_is_author ||
-          _.some(snippets, snippet => {
+          some(snippets, snippet => {
             return (
-              _.includes(msg_attachment_description, snippet) &&
+              includes(msg_attachment_description, snippet) &&
               // message only if snippet was added in change
-              !(data.action === 'edited' && _.includes(_.get(data, 'changes.body.from'), snippet))
+              !(data.action === 'edited' && includes(get(data, 'changes.body.from'), snippet))
             );
           });
 
@@ -163,7 +165,7 @@ module.exports.messenger = controller => {
         }
 
         // create the message
-        const message = {
+        const message: SlackMessage = {
           text: msg_text,
           attachments: [
             {

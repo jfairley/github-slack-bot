@@ -1,0 +1,6 @@
+{
+  "include": [
+    "index.ts",
+    "src/**/*.ts"
+  ]
+}

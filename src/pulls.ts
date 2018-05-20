@@ -6,11 +6,11 @@ if (!process.env.GITHUB_TOKEN) {
 }
 
 const authorization = `token ${process.env.GITHUB_TOKEN}`;
-const _ = require('lodash');
-const request = require('superagent');
-const Promise = require('bluebird');
+import * as Promise from 'bluebird';
+import { compact, flatten as lodash_flatten, get, groupBy, has, isEmpty, isEqual, slice, sortBy, trim, uniq, values } from 'lodash';
+import * as request from 'superagent';
 
-module.exports.commands = [
+export const commands = [
   {
     command: 'list',
     message: 'show matching issues and pull-requests for the current user'
@@ -33,7 +33,7 @@ module.exports.commands = [
   }
 ];
 
-module.exports.messenger = controller => {
+export const messenger = controller => {
   const actions = [
     { pattern: /^$/i, callback: listPRsForUser },
     { pattern: /^list (.*)$/i, callback: listPRs },
@@ -72,7 +72,7 @@ module.exports.messenger = controller => {
       let action = actions[i];
       let matches = action.pattern.exec(message.text);
       if (matches) {
-        return action.callback.apply(null, _.flatten([bot_reply, message, _.slice(matches, 1)]));
+        return action.callback.apply(null, flatten([bot_reply, message, slice(matches, 1)]));
       }
     }
 
@@ -113,12 +113,12 @@ module.exports.messenger = controller => {
       }
       const snippets = getSnippets(data, true);
       return Promise.resolve(fetchOrgIssues())
-        .then(body => _.values(groupByRepositoryUrl(body)))
+        .then(body => values(groupByRepositoryUrl(body)))
         .map(group => filterUninterestingLinks(group, snippets))
-        .filter(group => !_.isEmpty(group))
+        .filter(group => !isEmpty(group))
         .map(group =>
-          Promise.map(group, body => {
-            if (_.has(body, 'pull_request')) {
+          Promise.map(group, (body: any) => {
+            if (has(body, 'pull_request')) {
               return request
                 .get(body.pull_request.url)
                 .set('Authorization', authorization)
@@ -132,7 +132,7 @@ module.exports.messenger = controller => {
           })
         )
         .map(
-          group =>
+          (group: any[]) =>
             new Promise((resolve, reject) => {
               bot_reply(
                 message,
@@ -142,7 +142,7 @@ module.exports.messenger = controller => {
                     const link = `<${resp.html_url}|${resp.title}>`;
                     const extras = [];
                     // has assignee?
-                    if (_.has(resp, 'assignee.login')) {
+                    if (has(resp, 'assignee.login')) {
                       extras.push({
                         title: 'Assignee',
                         value: resp.assignee.login,
@@ -150,7 +150,7 @@ module.exports.messenger = controller => {
                       });
                     }
                     // has labels?
-                    if (!_.isEmpty(resp.labels)) {
+                    if (!isEmpty(resp.labels)) {
                       extras.push({
                         title: `Label${1 < resp.labels.length ? 's' : ''}`,
                         value: resp.labels.map(l => l.name).join(', '),
@@ -159,7 +159,7 @@ module.exports.messenger = controller => {
                     }
 
                     let color;
-                    switch (_.get(resp, 'pull_request.mergeable_state')) {
+                    switch (get(resp, 'pull_request.mergeable_state')) {
                       case 'clean':
                         color = 'good';
                         break;
@@ -185,7 +185,7 @@ module.exports.messenger = controller => {
               );
             })
         )
-        .then(data => (_.isEmpty(data) ? bot_reply(message, `No matching issues!! You're in the clear.`) : data))
+        .then(data => (isEmpty(data) ? bot_reply(message, `No matching issues!! You're in the clear.`) : data))
         .catch(err => bot_reply(message, `Unhandled error:\n${err}`));
     });
   }
@@ -223,19 +223,19 @@ module.exports.messenger = controller => {
       } else {
         const messages = [];
         // github username ?
-        if (!_.isEmpty(data.github_user)) {
+        if (!isEmpty(data.github_user)) {
           messages.push(`github username: \`${data.github_user}\``);
         }
         // slack channel ?
-        if (!_.isEmpty(data.slack_channel)) {
+        if (!isEmpty(data.slack_channel)) {
           messages.push(`slack channel: \`${data.slack_channel}\``);
         }
         // snippets ?
-        if (!_.isEmpty(data.snippets)) {
+        if (!isEmpty(data.snippets)) {
           messages.push(`snippets: \`${data.snippets.join('`, `')}\``);
         }
         // default message
-        if (_.isEmpty(messages)) {
+        if (isEmpty(messages)) {
           messages.push('_not configured_');
         }
         bot_reply(message, messages.join('\n'));
@@ -252,13 +252,13 @@ module.exports.messenger = controller => {
   }
 };
 
-function flatten() {
-  return _.compact(_.uniq(_.flatten(arguments)));
+function flatten(...args: any[]) {
+  return compact(uniq(lodash_flatten(args)));
 }
 
 function getSnippets(data, withUser) {
-  const snippets = _.get(data, 'snippets', []);
-  return withUser ? flatten(snippets, _.get(data, 'github_user')) : snippets;
+  const snippets = get(data, 'snippets', []);
+  return withUser ? flatten(snippets, get(data, 'github_user')) : snippets;
 }
 
 /**
@@ -276,8 +276,8 @@ function fetchOrgIssues() {
  * @param pulls
  */
 function groupByRepositoryUrl(pulls) {
-  pulls = _.sortBy(pulls, 'repository_url');
-  return _.groupBy(pulls, 'repository_url');
+  pulls = sortBy(pulls, 'repository_url');
+  return groupBy(pulls, 'repository_url');
 }
 
 /**
@@ -292,8 +292,8 @@ function filterUninterestingLinks(body, snippets) {
       snippet =>
         -1 < resp.title.indexOf(snippet) ||
         -1 < resp.body.indexOf(snippet) ||
-        _.isEqual(_.get(resp, 'assignee.login'), _.trim(snippet, ' @')) ||
-        _.isEqual(_.get(resp, 'user.login'), _.trim(snippet, ' @'))
+        isEqual(get(resp, 'assignee.login'), trim(snippet, ' @')) ||
+        isEqual(get(resp, 'user.login'), trim(snippet, ' @'))
     )
   );
 }

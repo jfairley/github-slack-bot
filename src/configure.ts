@@ -1,6 +1,6 @@
-const _ = require('lodash');
+import { eq, isEmpty, startsWith, trim, trimStart, union, without } from 'lodash';
 
-module.exports.commands = [
+export const commands = [
   {
     command: 'configure',
     message: 'configure settings for the current user'
@@ -11,12 +11,12 @@ module.exports.commands = [
   }
 ];
 
-module.exports.messenger = controller => {
+export const messenger = controller => {
   controller.on('slash_command', (bot, message) => {
-    const text = _.trim(message.text);
-    if (_.eq(text, 'configure')) {
+    const text = trim(message.text);
+    if (eq(text, 'configure')) {
       configureUser(bot, message);
-    } else if (_.startsWith(text)) {
+    } else if (startsWith(text)) {
       configureTeam(bot, message);
     } else {
       // ignore message
@@ -84,19 +84,19 @@ module.exports.messenger = controller => {
           controller.storage.users.get(team, (err, data) => {
             const messages = [];
             // github username ?
-            if (!_.isEmpty(data.github_user)) {
+            if (!isEmpty(data.github_user)) {
               messages.push(`github username: \`${data.github_user}\``);
             }
             // slack channel ?
-            if (!_.isEmpty(data.slack_channel)) {
+            if (!isEmpty(data.slack_channel)) {
               messages.push(`slack channel: \`${data.slack_channel}\``);
             }
             // snippets ?
-            if (!_.isEmpty(data.snippets)) {
+            if (!isEmpty(data.snippets)) {
               messages.push(`snippets: \`${data.snippets.join('`, `')}\``);
             }
             // default message
-            if (_.isEmpty(messages)) {
+            if (isEmpty(messages)) {
               messages.push('_not configured_');
             }
             convo.ask(messages.join('\n'), commandPatterns);
@@ -134,7 +134,7 @@ module.exports.messenger = controller => {
             unknownInput(response, convo);
             return;
           }
-          const channel = _.trimStart(response.match[1], '# ');
+          const channel = trimStart(response.match[1], '# ');
           controller.storage.users.get(team, (err, data) => {
             data.slack_channel = channel;
             controller.storage.users.save(data, err => {
@@ -153,7 +153,7 @@ module.exports.messenger = controller => {
         callback: (response, convo) => {
           const newSnippet = response.match[1];
           controller.storage.users.get(team, (err, data) => {
-            data.snippets = _.union(data.snippets, [newSnippet]);
+            data.snippets = union(data.snippets, [newSnippet]);
             controller.storage.users.save(data, err => {
               if (err) {
                 convo.ask(`Failed to add _${newSnippet}_! ${err}`, commandPatterns);
@@ -170,7 +170,7 @@ module.exports.messenger = controller => {
         callback: (response, convo) => {
           const removedSnippet = response.match[1];
           controller.storage.users.get(team, (err, data) => {
-            data.snippets = _.without(data.snippets, removedSnippet);
+            data.snippets = without(data.snippets, removedSnippet);
             controller.storage.users.save(data, err => {
               if (err) {
                 convo.ask(`Failed to remove _${removedSnippet}_! ${err}`, commandPatterns);
