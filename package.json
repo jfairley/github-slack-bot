@@ -42,8 +42,8 @@
     "build": "tsc",
     "commit": "commit",
     "fixpack": "fixpack",
+    "lint": "tslint --project tsconfig.json -c tslint.json",
     "prestart": "npm run lint && npm run build",
-    "start": "node index.js",
-    "lint": "tslint --project tsconfig.json -c tslint.json"
+    "start": "node index.js"
   }
 }
