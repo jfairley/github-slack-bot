@@ -1,14 +1,13 @@
 'use strict';
 
 import { SlackMessage } from 'botkit';
+import * as githubhook from 'githubhook';
 import { assign, forEach, get, has, includes, isEmpty, some } from 'lodash';
 
 if (!process.env.SLACK_BOT_TOKEN) {
   console.error('Error: Specify SLACK_BOT_TOKEN in environment');
   process.exit(1);
 }
-
-const githubhook = require('githubhook');
 
 export const messenger = controller => {
   const bot = controller
@@ -61,28 +60,25 @@ export const messenger = controller => {
       return;
     }
 
-    const is_comment = has(data, 'comment'),
-      is_pull_request = has(data, 'pull_request') || has(data, 'issue.pull_request'),
-      // combine for convenience, allowing comment data to win if it exists
-      payload = assign({}, data.issue, data.pull_request, data.comment),
-      issue_number = payload.number,
-      issue_title = payload.title,
-      link = payload.html_url,
-      repo = data.repository.full_name,
-      msg_attachment_description = payload.body,
-      pull_request_from = get(data, 'pull_request.head.label'),
-      pull_request_to = get(data, 'pull_request.base.label'),
-      pull_request_mergeable_state = get(data, 'pull_request.mergeable_state');
+    const is_comment = has(data, 'comment');
+    const is_pull_request = has(data, 'pull_request') || has(data, 'issue.pull_request');
+    // combine for convenience, allowing comment data to win if it exists
+    const payload = assign({}, data.issue, data.pull_request, data.comment);
+    const issue_number = payload.number;
+    const issue_title = payload.title;
+    const link = payload.html_url;
+    const repo = data.repository.full_name;
+    const msg_attachment_description = payload.body;
+    const pull_request_from = get(data, 'pull_request.head.label');
+    const pull_request_to = get(data, 'pull_request.base.label');
+    const pull_request_mergeable_state = get(data, 'pull_request.mergeable_state');
 
     // build the message attachment title
-    let msg_attachment_title;
-    if (has(data, 'comment.commit_id')) {
+    const msg_attachment_title = has(data, 'comment.commit_id')
       // this is a commit comment
-      msg_attachment_title = data.comment.commit_id;
-    } else {
+      ? data.comment.commit_id
       // this is associated with an issue or pull request
-      msg_attachment_title = '#' + issue_number + ': ' + issue_title;
-    }
+      : '#' + issue_number + ': ' + issue_title;
 
     // determine message attachment color
     let color;
@@ -107,7 +103,7 @@ export const messenger = controller => {
 
       forEach(all_user_data, user => {
         let user_is_author = false;
-        let snippets = user.snippets || [];
+        const snippets = user.snippets || [];
         if (!isEmpty(user.github_user)) {
           if (user.github_user === sender.login) {
             // do not notify of self-initiated actions
@@ -124,7 +120,7 @@ export const messenger = controller => {
         }
 
         // send all messages when the user is the issue author. otherwise check for snippet matches
-        let send_message =
+        const send_message =
           user_is_author ||
           some(snippets, snippet => {
             return (
@@ -169,7 +165,7 @@ export const messenger = controller => {
           text: msg_text,
           attachments: [
             {
-              color: color,
+              color,
               title: msg_attachment_title,
               title_link: link,
               text: msg_attachment_description,

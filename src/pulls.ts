@@ -68,9 +68,8 @@ export const messenger = controller => {
     // in case it's a slash command, we need to reply with something quickly
     bot.replyPrivate(message, ':hourglass:');
 
-    for (let i = 0; i < actions.length; i++) {
-      let action = actions[i];
-      let matches = action.pattern.exec(message.text);
+    for (const action of actions) {
+      const matches = action.pattern.exec(message.text);
       if (matches) {
         return action.callback.apply(null, flatten([bot_reply, message, slice(matches, 1)]));
       }
@@ -173,9 +172,9 @@ export const messenger = controller => {
                     }
 
                     // render extras as multiline text for brevity
-                    let moreTexts = extras.map(e => `- *${e.title}*: ${e.value}`);
+                    const moreTexts = extras.map(e => `- *${e.title}*: ${e.value}`);
                     return {
-                      color: color,
+                      color,
                       text: `${link} (${resp.user.login})\n${moreTexts.join('\n')}`,
                       mrkdwn_in: ['text']
                     };

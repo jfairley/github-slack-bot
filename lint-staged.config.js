@@ -1,4 +1,3 @@
 module.exports = {
-  '*.js': ['eslint --fix', 'git add'],
-  '*.ts': ['prettier', 'git add']
+  '*.ts': ['npm run lint', 'prettier', 'git add']
 };

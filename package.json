@@ -8,7 +8,8 @@
     "bluebird": "^3.4.6",
     "botkit": "^0.6.14",
     "githubhook": "^1.9.3",
-    "lodash": "^4.17.10"
+    "lodash": "^4.17.10",
+    "superagent": "^3.8.3"
   },
   "devDependencies": {
     "@commitlint/cli": "6.2.0",
@@ -17,14 +18,10 @@
     "@types/bluebird": "3.5.20",
     "@types/lodash": "4.14.109",
     "@types/superagent": "3.5.8",
-    "eslint": "4.19.1",
-    "eslint-config-prettier": "2.9.0",
-    "eslint-plugin-prettier": "2.6.0",
     "fixpack": "2.3.1",
     "husky": "1.0.0-rc.3",
     "lint-staged": "7.1.1",
     "prettier": "1.12.1",
-    "superagent": "3.8.3",
     "tslint": "5.10.0",
     "tslint-config-prettier": "1.12.0",
     "typescript": "2.8.3"
@@ -45,8 +42,8 @@
     "build": "tsc",
     "commit": "commit",
     "fixpack": "fixpack",
-    "lint": "eslint *.js src --fix",
     "prestart": "npm run lint && npm run build",
-    "start": "node index.js"
+    "start": "node index.js",
+    "lint": "tslint --project tsconfig.json -c tslint.json"
   }
 }
