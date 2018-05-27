@@ -19,7 +19,7 @@
     "@types/lodash": "4.14.109",
     "@types/superagent": "3.8.0",
     "fixpack": "2.3.1",
-    "husky": "1.0.0-rc.7",
+    "husky": "1.0.0-rc.8",
     "lint-staged": "7.1.2",
     "prettier": "1.13.0",
     "semantic-release": "15.5.0",
