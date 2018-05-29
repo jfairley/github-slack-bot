@@ -5,11 +5,11 @@
   "author": "Jeff Fairley",
   "bugs": "https://github.com/jfairley/github-slack-bot/issues",
   "dependencies": {
-    "bluebird": "^3.4.6",
-    "botkit": "^0.6.14",
-    "githubhook": "^1.9.3",
-    "lodash": "^4.17.10",
-    "superagent": "^3.8.3"
+    "bluebird": "3.5.1",
+    "botkit": "0.6.14",
+    "githubhook": "1.9.3",
+    "lodash": "4.17.10",
+    "superagent": "3.8.3"
   },
   "devDependencies": {
     "@commitlint/cli": "6.2.0",
