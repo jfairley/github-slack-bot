@@ -7,7 +7,20 @@ if (!process.env.GITHUB_TOKEN) {
 
 const authorization = `token ${process.env.GITHUB_TOKEN}`;
 import * as Promise from 'bluebird';
-import { compact, flatten as lodash_flatten, get, groupBy, has, isEmpty, isEqual, slice, sortBy, trim, uniq, values } from 'lodash';
+import {
+  compact,
+  flatten as lodash_flatten,
+  get,
+  groupBy,
+  has,
+  isEmpty,
+  isEqual,
+  slice,
+  sortBy,
+  trim,
+  uniq,
+  values
+} from 'lodash';
 import * as request from 'superagent';
 
 export const commands = [
@@ -194,7 +207,10 @@ export const messenger = controller => {
    */
   function listTeams(bot_reply, message) {
     controller.storage.users.all((err, data) => {
-      bot_reply(message, `Configured teams:\n${data.map(team => ` - ${team.id}`).join('\n')}`);
+      bot_reply(
+        message,
+        `Configured teams:\n${data.map(team => /^U\w{8}$/.test(team.id) ? ` - ${team.id} (<@${team.id}>)` : ` - ${team.id}`).join('\n')}`
+      );
     });
   }
 
