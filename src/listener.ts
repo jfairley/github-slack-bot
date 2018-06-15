@@ -196,7 +196,7 @@ export const messenger = controller => {
         }
 
         // kill the bot
-        bot.destroy();
+        bot.closeRTM();
       });
     });
   }
