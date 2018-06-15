@@ -9,6 +9,13 @@ if (!process.env.SLACK_BOT_TOKEN) {
 }
 
 export const messenger = controller => {
+  // start the bot
+  const bot = controller
+    .spawn({
+      token: process.env.SLACK_BOT_TOKEN
+    })
+    .startRTM();
+
   // github hooks
   const github = new WebhooksApi({
     secret: process.env.GITHUB_WEBHOOK_SECRET
@@ -167,13 +174,6 @@ export const messenger = controller => {
           ]
         };
 
-        // start the bot
-        const bot = controller
-          .spawn({
-            token: process.env.SLACK_BOT_TOKEN
-          })
-          .startRTM();
-
         // send the message
         if (user.slack_channel) {
           // message to channel
@@ -194,9 +194,6 @@ export const messenger = controller => {
             }
           );
         }
-
-        // kill the bot
-        bot.closeRTM();
       });
     });
   }
