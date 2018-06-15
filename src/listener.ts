@@ -19,7 +19,7 @@ export const messenger = controller => {
 
   // github hooks
   const github = new WebhooksApi({
-    secret: ''
+    secret: process.env.GITHUB_WEBHOOK_SECRET
   });
 
   http.createServer(github.middleware).listen(process.env.GITHUB_WEBHOOK_PORT);
