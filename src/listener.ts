@@ -1,7 +1,8 @@
 'use strict';
 
+import * as WebhooksApi from '@octokit/webhooks';
 import { SlackMessage } from 'botkit';
-import * as githubhook from 'githubhook';
+import * as http from 'http';
 import { assign, forEach, get, has, includes, isEmpty, some } from 'lodash';
 
 if (!process.env.SLACK_BOT_TOKEN) {
@@ -17,32 +18,32 @@ export const messenger = controller => {
     .startRTM();
 
   // github hooks
-  const github = githubhook({
-    port: process.env.GITHUB_WEBHOOK_PORT
+  const github = new WebhooksApi({
+    secret: ''
   });
 
-  github.listen();
+  http.createServer(github.middleware).listen(process.env.GITHUB_WEBHOOK_PORT);
 
-  github.on('*', (event, repo, ref, data) => {
+  github.on('*', ({ id, name, payload }) => {
     try {
-      switch (event) {
+      switch (name) {
         case 'issues':
         case 'pull_request':
-          switch (data.action) {
+          switch (payload.action) {
             case 'opened':
             case 'reopened':
             case 'edited':
-              notifyIssue(data);
+              notifyIssue(payload);
               break;
           }
           break;
         case 'commit_comment':
         case 'issue_comment':
         case 'pull_request_review_comment':
-          switch (data.action) {
+          switch (payload.action) {
             case 'created':
             case 'edited':
-              notifyIssue(data);
+              notifyIssue(payload);
               break;
           }
           break;
@@ -75,10 +76,10 @@ export const messenger = controller => {
 
     // build the message attachment title
     const msg_attachment_title = has(data, 'comment.commit_id')
-      // this is a commit comment
-      ? data.comment.commit_id
-      // this is associated with an issue or pull request
-      : '#' + issue_number + ': ' + issue_title;
+      ? // this is a commit comment
+        data.comment.commit_id
+      : // this is associated with an issue or pull request
+        '#' + issue_number + ': ' + issue_title;
 
     // determine message attachment color
     let color;
