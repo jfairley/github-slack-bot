@@ -1,4 +1,5 @@
 module.exports = {
   'package.json': ['fixpack', 'git add'],
-  '*.ts': ['prettier', 'npm run lint', 'git add']
+  '*.config.js': ['prettier --write', 'git add'],
+  '*.ts': ['prettier --write', 'npm run lint', 'git add']
 };

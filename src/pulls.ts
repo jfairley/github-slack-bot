@@ -1,11 +1,4 @@
-'use strict';
-
-if (!process.env.GITHUB_TOKEN) {
-  console.error('Error: Specify GITHUB_TOKEN in environment');
-  process.exit(1);
-}
-
-const authorization = `token ${process.env.GITHUB_TOKEN}`;
+import * as Github from '@octokit/rest';
 import * as Promise from 'bluebird';
 import {
   compact,
@@ -21,7 +14,17 @@ import {
   uniq,
   values
 } from 'lodash';
-import * as request from 'superagent';
+
+if (!process.env.GITHUB_TOKEN) {
+  console.error('Error: Specify GITHUB_TOKEN in environment');
+  process.exit(1);
+}
+
+const github = new Github();
+github.authenticate({
+  type: 'token',
+  token: process.env.GITHUB_TOKEN
+});
 
 export const commands = [
   {
@@ -131,11 +134,14 @@ export const messenger = controller => {
         .map(group =>
           Promise.map(group, (body: any) => {
             if (has(body, 'pull_request')) {
-              return request
-                .get(body.pull_request.url)
-                .set('Authorization', authorization)
+              return github.pullRequests
+                .get({
+                  number: body.number,
+                  owner: body.repository.owner.login,
+                  repo: body.repository.name
+                })
                 .then(res => {
-                  body.pull_request = res.body;
+                  body.pull_request = res.data;
                   return body;
                 });
             } else {
@@ -209,7 +215,9 @@ export const messenger = controller => {
     controller.storage.users.all((err, data) => {
       bot_reply(
         message,
-        `Configured teams:\n${data.map(team => /^U\w{8}$/.test(team.id) ? ` - ${team.id} (<@${team.id}>)` : ` - ${team.id}`).join('\n')}`
+        `Configured teams:\n${data
+          .map(team => (/^U\w{8}$/.test(team.id) ? ` - ${team.id} (<@${team.id}>)` : ` - ${team.id}`))
+          .join('\n')}`
       );
     });
   }
@@ -280,10 +288,13 @@ function getSnippets(data, withUser) {
  * Fetch organization issues
  */
 function fetchOrgIssues() {
-  return request
-    .get('https://api.github.com/orgs/levelsbeyond/issues?filter=all')
-    .set('Authorization', authorization)
-    .then(res => res.body);
+  return github.issues
+    .getForOrg({
+      org: 'levelsbeyond',
+      filter: 'all',
+      state: 'open'
+    })
+    .then(res => res.data);
 }
 
 /**
