@@ -71,7 +71,6 @@ export const messenger = controller => {
     const msg_attachment_description = payload.body;
     const pull_request_from = get(data, 'pull_request.head.label');
     const pull_request_to = get(data, 'pull_request.base.label');
-    const pull_request_mergeable_state = get(data, 'pull_request.mergeable_state');
 
     // build the message attachment title
     const msg_attachment_title = has(data, 'comment.commit_id')
@@ -81,19 +80,7 @@ export const messenger = controller => {
         '#' + issue_number + ': ' + issue_title;
 
     // determine message attachment color
-    let color;
-    switch (pull_request_mergeable_state) {
-      case 'clean':
-        color = 'good';
-        break;
-      case 'unknown':
-        color = 'warning';
-        break;
-      case 'unstable':
-      case 'dirty':
-        color = 'danger';
-        break;
-    }
+    const color = determineAttachmentColor(data);
 
     controller.storage.users.all((err, all_user_data) => {
       if (err) {
@@ -198,3 +185,16 @@ export const messenger = controller => {
     });
   }
 };
+
+function determineAttachmentColor(payload): 'good' | 'warning' | 'danger' | undefined {
+  const pull_request_mergeable_state = get(payload, 'pull_request.mergeable_state');
+  switch (pull_request_mergeable_state) {
+    case 'clean':
+      return 'good';
+    case 'unknown':
+      return 'warning';
+    case 'unstable':
+    case 'dirty':
+      return 'danger';
+  }
+}
