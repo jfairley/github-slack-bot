@@ -287,7 +287,7 @@ export const messenger = controller => {
                                 text: map(
                                   statusesByContext,
                                   status =>
-                                    `${status.state === StatusState.SUCCESS ? ':white_check_mark' : ':x:'} *${
+                                    `${status.state === StatusState.SUCCESS ? ':white_check_mark:' : ':x:'} *${
                                       status.context
                                     }*: ${status.description}`
                                 ).join('\n'),
@@ -303,7 +303,8 @@ export const messenger = controller => {
               });
             })
           )
-      );
+      )
+      .catch(err => console.log(`Rejection from status webhook: ${err}`));
   }
 };
 
