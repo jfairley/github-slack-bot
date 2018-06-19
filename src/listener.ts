@@ -1,7 +1,10 @@
+import * as Github from '@octokit/rest';
 import * as WebhooksApi from '@octokit/webhooks';
+import * as Promise from 'bluebird';
 import { SlackMessage } from 'botkit';
 import * as http from 'http';
-import { assign, forEach, get, has, includes, isEmpty, some } from 'lodash';
+import { assign, forEach, get, has, includes, isEmpty, map, some } from 'lodash';
+import * as moment from 'moment';
 
 if (!process.env.SLACK_BOT_TOKEN) {
   console.error('Error: Specify SLACK_BOT_TOKEN in environment');
@@ -17,13 +20,20 @@ export const messenger = controller => {
     .startRTM();
 
   // github hooks
-  const github = new WebhooksApi({
+  const webhooksApi = new WebhooksApi({
     secret: process.env.GITHUB_WEBHOOK_SECRET
   });
 
-  http.createServer(github.middleware).listen(process.env.GITHUB_WEBHOOK_PORT);
+  // github api
+  const github = new Github();
+  github.authenticate({
+    type: 'token',
+    token: process.env.GITHUB_TOKEN
+  });
 
-  github.on('*', ({ id, name, payload }) => {
+  http.createServer(webhooksApi.middleware).listen(process.env.GITHUB_WEBHOOK_PORT);
+
+  webhooksApi.on('*', ({ id, name, payload }) => {
     try {
       switch (name) {
         case 'issues':
@@ -45,6 +55,9 @@ export const messenger = controller => {
               notifyIssue(payload);
               break;
           }
+          break;
+        case 'status':
+          checkStatus(payload);
           break;
       }
     } catch (err) {
@@ -184,6 +197,116 @@ export const messenger = controller => {
       });
     });
   }
+
+  function checkStatus(payload) {
+    const author = payload.commit.author.login;
+    const committer = payload.commit.committer.login;
+
+    // search for issues
+    Promise.resolve(github.search.issues({ q: payload.sha }))
+      .then(res => res.data.items)
+      // verify that the commit is the latest, ignoring those for which it isn't
+      .filter((issue: any) =>
+        github.pullRequests
+          .getCommits({
+            number: issue.number,
+            owner: payload.repository.owner.login,
+            repo: payload.repository.name
+          })
+          .then(res => res.data[res.data.length - 1].sha === payload.sha)
+      )
+      // lookup statuses and message for each PR
+      .then(issues =>
+        github.repos
+          .getStatuses({
+            owner: payload.repository.owner.login,
+            repo: payload.repository.name,
+            ref: payload.sha
+          })
+          // reduce statuses, removing outdated ones
+          .then(res =>
+            res.data.reduce((statusesByContext, status) => {
+              if (
+                !(status.context in statusesByContext) ||
+                moment(status.context.updated_at).isAfter(statusesByContext[status.context].updated_at)
+              ) {
+                statusesByContext[status.context] = status;
+              }
+              return statusesByContext;
+            }, {})
+          )
+          // filter out incomplete statuses
+          .then(
+            statusesByContext =>
+              some(statusesByContext, { state: CommitStatusStates.PENDING })
+                ? Promise.reject('skipping message for pending statuses')
+                : statusesByContext
+          )
+          // notify statuses for each issue
+          .then(statusesByContext =>
+            controller.storage.users.all((err, all_user_data) => {
+              if (err) {
+                console.error(err);
+                return;
+              }
+
+              forEach(all_user_data, user => {
+                if (includes([author, committer], user.github_user)) {
+                  issues.map(issue => {
+                    // direct message to user
+                    bot.startPrivateConversation(
+                      {
+                        user: user.id
+                      },
+                      (err, convo) => {
+                        if (err) {
+                          console.error('failed to start private conversation', err);
+                        } else {
+                          convo.say({
+                            text: `Your commit statuses have resolved!`,
+                            attachments: [
+                              {
+                                title: `#${issue.number}: ${issue.title}`,
+                                title_link: issue.html_url,
+                                text: map(
+                                  statusesByContext,
+                                  status =>
+                                    `${status.state === CommitStatusStates.SUCCESS ? ':white_check_mark' : ':x:'} ${
+                                      status.context
+                                    }: ${status.description}`
+                                ).join('\n'),
+                                mrkdwn_in: ['text']
+                              }
+                            ]
+                          });
+                        }
+                      }
+                    );
+                  });
+                }
+              });
+            })
+          )
+      )
+      // load PR commits for each item
+      .map((item: any) =>
+        github.pullRequests.getCommits({
+          number: item.number,
+          owner: payload.repository.owner.login,
+          repo: payload.repository.name
+        })
+      )
+      // ignore any that aren't the latest commit
+      .filter((commits: any[]) => commits[commits.length - 1].sha === payload.sha)
+      // load PR for each item
+      .map((item: any) =>
+        github.pullRequests.get({
+          number: item.number,
+          owner: payload.repository.owner.login,
+          repo: payload.repository.name
+        })
+      );
+  }
 };
 
 function determineAttachmentColor(payload): 'good' | 'warning' | 'danger' | undefined {
@@ -197,4 +320,11 @@ function determineAttachmentColor(payload): 'good' | 'warning' | 'danger' | unde
     case 'dirty':
       return 'danger';
   }
+}
+
+enum CommitStatusStates {
+  ERROR = 'error',
+  FAILURE = 'failure',
+  PENDING = 'pending',
+  SUCCESS = 'success'
 }
