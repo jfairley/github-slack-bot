@@ -3,9 +3,8 @@ import * as WebhooksApi from '@octokit/webhooks';
 import * as Promise from 'bluebird';
 import { SlackMessage } from 'botkit';
 import * as http from 'http';
-import { assign, every, forEach, get, has, includes, isEmpty, map, some } from 'lodash';
-import * as moment from 'moment';
-import { Commit, Issue, MergeableState, Status, StatusState, StatusWebhook } from './models/github';
+import { assign, forEach, get, has, includes, isEmpty, some } from 'lodash';
+import { Commit, Issue, MergeableState, StatusState, StatusWebhook } from './models/github';
 import { SlackAttachmentColor } from './models/slack';
 
 if (!process.env.GITHUB_TOKEN) {
@@ -233,82 +232,50 @@ export const messenger = controller => {
           .then(res => res.data as Commit[])
           .then(commits => commits[commits.length - 1].sha === payload.sha)
       )
-      // lookup statuses and message for each PR
+      // notify statuses for each issue
       .then(issues =>
-        github.repos
-          .getStatuses({
-            owner: payload.repository.owner.login,
-            repo: payload.repository.name,
-            ref: payload.sha
-          })
-          // reduce statuses, removing outdated ones
-          .then(res =>
-            (res.data as Status[]).reduce(
-              (statusesByContext, status) => {
-                const existingStatus = statusesByContext[status.context];
-                if (!existingStatus || moment(status.updated_at).isAfter(existingStatus.updated_at)) {
-                  statusesByContext[status.context] = status;
-                }
-                return statusesByContext;
-              },
-              {} as { [key: string]: Status }
-            )
-          )
-          // filter out incomplete statuses
-          .then(
-            statusesByContext =>
-              some(statusesByContext, status => status.state === StatusState.PENDING)
-                ? Promise.reject('skipping message for pending statuses')
-                : Promise.resolve(statusesByContext)
-          )
-          // notify statuses for each issue
-          .then(statusesByContext =>
-            controller.storage.users.all((err, all_user_data) => {
-              if (err) {
-                console.error(err);
-                return;
-              }
+        controller.storage.users.all((err, all_user_data) => {
+          if (err) {
+            console.error(err);
+            return;
+          }
 
-              forEach(all_user_data, user => {
-                if (includes([author, committer], user.github_user)) {
-                  issues.map(issue => {
-                    // direct message to user
-                    bot.startPrivateConversation(
-                      {
-                        user: user.id
-                      },
-                      (err, convo) => {
-                        if (err) {
-                          console.error('failed to start private conversation', err);
-                        } else {
-                          convo.say({
-                            text: `Your commit statuses have resolved!`,
-                            attachments: [
-                              {
-                                color: every(statusesByContext, status => status.state === StatusState.SUCCESS)
-                                  ? SlackAttachmentColor.GOOD
-                                  : SlackAttachmentColor.DANGER,
-                                title: `#${issue.number}: ${issue.title}`,
-                                title_link: issue.html_url,
-                                text: map(
-                                  statusesByContext,
-                                  status =>
-                                    `${status.state === StatusState.SUCCESS ? ':white_check_mark:' : ':x:'} *${
-                                      status.context
-                                    }*: ${status.description}`
-                                ).join('\n'),
-                                mrkdwn_in: ['text']
-                              }
-                            ]
-                          });
-                        }
-                      }
-                    );
-                  });
-                }
+          forEach(all_user_data, user => {
+            if (includes([author, committer], user.github_user)) {
+              issues.map(issue => {
+                // direct message to user
+                bot.startPrivateConversation(
+                  {
+                    user: user.id
+                  },
+                  (err, convo) => {
+                    if (err) {
+                      console.error('failed to start private conversation', err);
+                    } else {
+                      convo.say({
+                        text: `Your commit statuses have resolved!`,
+                        attachments: [
+                          {
+                            color:
+                              payload.state === StatusState.SUCCESS
+                                ? SlackAttachmentColor.GOOD
+                                : SlackAttachmentColor.DANGER,
+                            title: `#${issue.number}: ${issue.title}`,
+                            title_link: issue.html_url,
+                            text: `${payload.state === StatusState.SUCCESS ? ':white_check_mark:' : ':x:'} *${
+                              payload.context
+                            }*: ${payload.description}`,
+                            mrkdwn_in: ['text']
+                          }
+                        ]
+                      });
+                    }
+                  }
+                );
               });
-            })
-          )
+            }
+          });
+        })
       )
       .catch(err => console.log(`Rejection from status webhook: ${err}`));
   }
