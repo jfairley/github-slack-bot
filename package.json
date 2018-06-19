@@ -17,7 +17,7 @@
     "@commitlint/prompt-cli": "7.0.0",
     "@types/bluebird": "3.5.20",
     "@types/lodash": "4.14.109",
-    "@types/superagent": "3.8.0",
+    "@types/superagent": "3.8.1",
     "fixpack": "2.3.1",
     "husky": "1.0.0-rc.9",
     "lint-staged": "7.2.0",
