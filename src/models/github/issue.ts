@@ -24,7 +24,7 @@ export interface Issue {
   patch_url: string;
   issue_url: string;
   number: number;
-  state: 'open' | 'closed' | 'all';
+  state: 'open' | 'closed';
   locked: boolean;
   title: string;
   user: Userish;

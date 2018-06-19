@@ -221,6 +221,8 @@ export const messenger = controller => {
     // search for issues
     Promise.resolve(github.search.issues({ q: payload.sha }))
       .then(res => res.data.items as Issue[])
+      // verify that the issue is not closed
+      .filter((issue: Issue) => issue.state !== 'closed')
       // verify that the commit is the latest, ignoring those for which it isn't
       .filter((issue: Issue) =>
         github.pullRequests
