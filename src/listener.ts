@@ -221,7 +221,7 @@ export const messenger = controller => {
 
     // search for issues
     Promise.resolve(github.search.issues({ q: payload.sha }))
-      .then(res => res.data.items)
+      .then(res => res.data.items as Issue[])
       // verify that the commit is the latest, ignoring those for which it isn't
       .filter((issue: Issue) =>
         github.pullRequests
@@ -234,7 +234,7 @@ export const messenger = controller => {
           .then(commits => commits[commits.length - 1].sha === payload.sha)
       )
       // lookup statuses and message for each PR
-      .then((issues: Issue[]) =>
+      .then(issues =>
         github.repos
           .getStatuses({
             owner: payload.repository.owner.login,
@@ -245,10 +245,8 @@ export const messenger = controller => {
           .then(res =>
             (res.data as Status[]).reduce(
               (statusesByContext, status) => {
-                if (
-                  !(status.context in statusesByContext) ||
-                  moment(status.updated_at).isAfter(statusesByContext[status.context].updated_at)
-                ) {
+                const existingStatus = statusesByContext[status.context];
+                if (!existingStatus || moment(status.updated_at).isAfter(existingStatus.updated_at)) {
                   statusesByContext[status.context] = status;
                 }
                 return statusesByContext;
