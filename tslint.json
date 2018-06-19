@@ -4,7 +4,12 @@
     "tslint-config-prettier"
   ],
   "rules": {
+    "interface-name": [
+      true,
+      "never-prefix"
+    ],
     "no-console": false,
+    "no-object-literal-type-assertion": false,
     "no-shadowed-variable": false,
     "object-literal-sort-keys": false,
     "variable-name": [

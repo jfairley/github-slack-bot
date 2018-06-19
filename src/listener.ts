@@ -5,6 +5,18 @@ import { SlackMessage } from 'botkit';
 import * as http from 'http';
 import { assign, forEach, get, has, includes, isEmpty, map, some } from 'lodash';
 import * as moment from 'moment';
+import { Commit, Issue, MergeableState, Status, StatusState, StatusWebhook } from './models/github';
+import { SlackAttachmentColor } from './models/slack';
+
+if (!process.env.GITHUB_TOKEN) {
+  console.error('Error: Specify GITHUB_TOKEN in environment');
+  process.exit(1);
+}
+
+if (!process.env.GITHUB_WEBHOOK_SECRET) {
+  console.error('Error: Specify GITHUB_WEBHOOK_SECRET in environment');
+  process.exit(1);
+}
 
 if (!process.env.SLACK_BOT_TOKEN) {
   console.error('Error: Specify SLACK_BOT_TOKEN in environment');
@@ -198,7 +210,7 @@ export const messenger = controller => {
     });
   }
 
-  function checkStatus(payload) {
+  function checkStatus(payload: StatusWebhook) {
     const author = payload.commit.author.login;
     const committer = payload.commit.committer.login;
 
@@ -206,17 +218,18 @@ export const messenger = controller => {
     Promise.resolve(github.search.issues({ q: payload.sha }))
       .then(res => res.data.items)
       // verify that the commit is the latest, ignoring those for which it isn't
-      .filter((issue: any) =>
+      .filter((issue: Issue) =>
         github.pullRequests
           .getCommits({
             number: issue.number,
             owner: payload.repository.owner.login,
             repo: payload.repository.name
           })
-          .then(res => res.data[res.data.length - 1].sha === payload.sha)
+          .then(res => res.data as Commit[])
+          .then(commits => commits[commits.length - 1].sha === payload.sha)
       )
       // lookup statuses and message for each PR
-      .then(issues =>
+      .then((issues: Issue[]) =>
         github.repos
           .getStatuses({
             owner: payload.repository.owner.login,
@@ -225,22 +238,25 @@ export const messenger = controller => {
           })
           // reduce statuses, removing outdated ones
           .then(res =>
-            res.data.reduce((statusesByContext, status) => {
-              if (
-                !(status.context in statusesByContext) ||
-                moment(status.context.updated_at).isAfter(statusesByContext[status.context].updated_at)
-              ) {
-                statusesByContext[status.context] = status;
-              }
-              return statusesByContext;
-            }, {})
+            (res.data as Status[]).reduce(
+              (statusesByContext, status) => {
+                if (
+                  !(status.context in statusesByContext) ||
+                  moment(status.updated_at).isAfter(statusesByContext[status.context].updated_at)
+                ) {
+                  statusesByContext[status.context] = status;
+                }
+                return statusesByContext;
+              },
+              {} as { [key: string]: Status }
+            )
           )
           // filter out incomplete statuses
           .then(
             statusesByContext =>
-              some(statusesByContext, { state: CommitStatusStates.PENDING })
+              some(statusesByContext, status => status.state === StatusState.PENDING)
                 ? Promise.reject('skipping message for pending statuses')
-                : statusesByContext
+                : Promise.resolve(statusesByContext)
           )
           // notify statuses for each issue
           .then(statusesByContext =>
@@ -271,9 +287,9 @@ export const messenger = controller => {
                                 text: map(
                                   statusesByContext,
                                   status =>
-                                    `${status.state === CommitStatusStates.SUCCESS ? ':white_check_mark' : ':x:'} ${
+                                    `${status.state === StatusState.SUCCESS ? ':white_check_mark' : ':x:'} *${
                                       status.context
-                                    }: ${status.description}`
+                                    }*: ${status.description}`
                                 ).join('\n'),
                                 mrkdwn_in: ['text']
                               }
@@ -287,44 +303,19 @@ export const messenger = controller => {
               });
             })
           )
-      )
-      // load PR commits for each item
-      .map((item: any) =>
-        github.pullRequests.getCommits({
-          number: item.number,
-          owner: payload.repository.owner.login,
-          repo: payload.repository.name
-        })
-      )
-      // ignore any that aren't the latest commit
-      .filter((commits: any[]) => commits[commits.length - 1].sha === payload.sha)
-      // load PR for each item
-      .map((item: any) =>
-        github.pullRequests.get({
-          number: item.number,
-          owner: payload.repository.owner.login,
-          repo: payload.repository.name
-        })
       );
   }
 };
 
-function determineAttachmentColor(payload): 'good' | 'warning' | 'danger' | undefined {
+function determineAttachmentColor(payload): SlackAttachmentColor {
   const pull_request_mergeable_state = get(payload, 'pull_request.mergeable_state');
   switch (pull_request_mergeable_state) {
-    case 'clean':
-      return 'good';
-    case 'unknown':
-      return 'warning';
-    case 'unstable':
-    case 'dirty':
-      return 'danger';
+    case MergeableState.CLEAN:
+      return SlackAttachmentColor.GOOD;
+    case MergeableState.UNKNOWN:
+      return SlackAttachmentColor.WARNING;
+    case MergeableState.UNSTABLE:
+    case MergeableState.DIRTY:
+      return SlackAttachmentColor.DANGER;
   }
-}
-
-enum CommitStatusStates {
-  ERROR = 'error',
-  FAILURE = 'failure',
-  PENDING = 'pending',
-  SUCCESS = 'success'
 }
