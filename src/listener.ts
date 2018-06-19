@@ -253,7 +253,7 @@ export const messenger = controller => {
                       console.error('failed to start private conversation', err);
                     } else {
                       convo.say({
-                        text: `Your commit statuses have resolved!`,
+                        text: `Updated commit status:`,
                         attachments: [
                           {
                             color:
