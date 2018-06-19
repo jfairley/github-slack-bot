@@ -3,7 +3,7 @@ import * as WebhooksApi from '@octokit/webhooks';
 import * as Promise from 'bluebird';
 import { SlackMessage } from 'botkit';
 import * as http from 'http';
-import { assign, forEach, get, has, includes, isEmpty, map, some } from 'lodash';
+import { assign, every, forEach, get, has, includes, isEmpty, map, some } from 'lodash';
 import * as moment from 'moment';
 import { Commit, Issue, MergeableState, Status, StatusState, StatusWebhook } from './models/github';
 import { SlackAttachmentColor } from './models/slack';
@@ -282,6 +282,9 @@ export const messenger = controller => {
                             text: `Your commit statuses have resolved!`,
                             attachments: [
                               {
+                                color: every(statusesByContext, status => status.state === StatusState.SUCCESS)
+                                  ? SlackAttachmentColor.GOOD
+                                  : SlackAttachmentColor.DANGER,
                                 title: `#${issue.number}: ${issue.title}`,
                                 title_link: issue.html_url,
                                 text: map(
