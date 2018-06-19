@@ -211,6 +211,11 @@ export const messenger = controller => {
   }
 
   function checkStatus(payload: StatusWebhook) {
+    if (payload.state === StatusState.PENDING) {
+      // ignore non-final statuses
+      return;
+    }
+
     const author = payload.commit.author.login;
     const committer = payload.commit.committer.login;
 
