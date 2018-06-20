@@ -1,6 +1,7 @@
 import { IssueState } from './issue-state';
 import { Link } from './link';
 import { Repository } from './repository';
+import { ReviewState } from './review-state';
 import { Userish } from './userish';
 
 export interface PullRequestReviewWebhook {
@@ -12,7 +13,7 @@ export interface PullRequestReviewWebhook {
     body: string;
     commit_id: string;
     submitted_at: string;
-    state: 'commented' | string;
+    state: ReviewState;
     html_url: string;
     pull_request_url: string;
     author_association: string;

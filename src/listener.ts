@@ -13,6 +13,7 @@ import {
   StatusState,
   StatusWebhook
 } from './models/github';
+import { ReviewState } from './models/github/review-state';
 import { SlackAttachmentColor } from './models/slack';
 
 if (!process.env.GITHUB_TOKEN) {
@@ -242,6 +243,18 @@ export const messenger = controller => {
             if (err) {
               console.error('failed to start private conversation', err);
             } else {
+              let textSummary;
+              switch (payload.review.state) {
+                case ReviewState.APPROVED:
+                  textSummary = `:white_check_mark: *Approved*`;
+                  break;
+                case ReviewState.COMMENTED:
+                  textSummary = `:eyes: *Commented*`;
+                  break;
+                case ReviewState.REJECTED:
+                  textSummary = `:x: *Rejected*`;
+                  break;
+              }
               convo.say({
                 text: `Review ${payload.action} for *${payload.pull_request.base.repo.name}* by *${
                   payload.sender.login
@@ -250,7 +263,7 @@ export const messenger = controller => {
                   {
                     title: `#${payload.pull_request.number}: ${payload.pull_request.title}`,
                     title_link: payload.pull_request.html_url,
-                    text: payload.review.body,
+                    text: `${textSummary}\n${payload.review.body}`,
                     mrkdwn_in: ['text']
                   }
                 ]
