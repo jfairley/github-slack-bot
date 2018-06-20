@@ -243,15 +243,19 @@ export const messenger = controller => {
             if (err) {
               console.error('failed to start private conversation', err);
             } else {
+              let color;
               let textSummary;
               switch (payload.review.state) {
                 case ReviewState.APPROVED:
+                  color = SlackAttachmentColor.GOOD;
                   textSummary = `:white_check_mark: *Approved*`;
                   break;
                 case ReviewState.COMMENTED:
+                  color = undefined;
                   textSummary = `:eyes: *Commented*`;
                   break;
                 case ReviewState.REJECTED:
+                  color = SlackAttachmentColor.DANGER;
                   textSummary = `:x: *Rejected*`;
                   break;
               }
@@ -261,6 +265,7 @@ export const messenger = controller => {
                 }*:`,
                 attachments: [
                   {
+                    color,
                     title: `#${payload.pull_request.number}: ${payload.pull_request.title}`,
                     title_link: payload.pull_request.html_url,
                     text: `${textSummary}\n${payload.review.body}`,
