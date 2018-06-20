@@ -1,4 +1,4 @@
-import { StatusState } from './statusWebhook';
+import { StatusState } from './status-webhook';
 import { Userish } from './userish';
 
 export interface Status {

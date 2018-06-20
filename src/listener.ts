@@ -4,7 +4,15 @@ import * as Promise from 'bluebird';
 import { SlackMessage } from 'botkit';
 import * as http from 'http';
 import { assign, forEach, get, has, includes, isEmpty, some } from 'lodash';
-import { Commit, Issue, MergeableState, StatusState, StatusWebhook } from './models/github';
+import {
+  Commit,
+  Issue,
+  IssueState,
+  MergeableState,
+  PullRequestReviewWebhook,
+  StatusState,
+  StatusWebhook
+} from './models/github';
 import { SlackAttachmentColor } from './models/slack';
 
 if (!process.env.GITHUB_TOKEN) {
@@ -66,6 +74,9 @@ export const messenger = controller => {
               notifyIssue(payload);
               break;
           }
+          break;
+        case 'pull_request_review':
+          notifyPullRequestReview(payload);
           break;
         case 'status':
           checkStatus(payload);
@@ -209,6 +220,48 @@ export const messenger = controller => {
     });
   }
 
+  function notifyPullRequestReview(payload: PullRequestReviewWebhook) {
+    controller.storage.users.all((err, all_user_data) => {
+      if (err) {
+        console.error(err);
+        return;
+      }
+
+      forEach(all_user_data, user => {
+        if (payload.pull_request.user.login !== user.github_user) {
+          // send message only to the PR owner
+          return;
+        }
+
+        // direct message to user
+        bot.startPrivateConversation(
+          {
+            user: user.id
+          },
+          (err, convo) => {
+            if (err) {
+              console.error('failed to start private conversation', err);
+            } else {
+              convo.say({
+                text: `Review ${payload.action} for *${payload.pull_request.base.repo.name}* by *${
+                  payload.sender.login
+                }*:`,
+                attachments: [
+                  {
+                    title: `#${payload.pull_request.number}: ${payload.pull_request.title}`,
+                    title_link: payload.pull_request.html_url,
+                    text: payload.review.body,
+                    mrkdwn_in: ['text']
+                  }
+                ]
+              });
+            }
+          }
+        );
+      });
+    });
+  }
+
   function checkStatus(payload: StatusWebhook) {
     if (payload.state === StatusState.PENDING) {
       // ignore non-final statuses
@@ -222,7 +275,7 @@ export const messenger = controller => {
     Promise.resolve(github.search.issues({ q: payload.sha }))
       .then(res => res.data.items as Issue[])
       // verify that the issue is not closed
-      .filter((issue: Issue) => issue.state !== 'closed')
+      .filter((issue: Issue) => issue.state !== IssueState.CLOSED)
       // verify that the commit is the latest, ignoring those for which it isn't
       .filter((issue: Issue) =>
         github.pullRequests

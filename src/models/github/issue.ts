@@ -1,10 +1,8 @@
+import { IssueState } from './issue-state';
+import { Link } from './link';
 import { MergeableState } from './mergeable-state';
 import { Repository } from './repository';
 import { Userish } from './userish';
-
-interface Link {
-  href: string;
-}
 
 interface Label {
   id: number;
@@ -24,7 +22,7 @@ export interface Issue {
   patch_url: string;
   issue_url: string;
   number: number;
-  state: 'open' | 'closed';
+  state: IssueState;
   locked: boolean;
   title: string;
   user: Userish;
