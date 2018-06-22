@@ -1,5 +1,5 @@
 export enum ReviewState {
   APPROVED = 'approved',
   COMMENTED = 'commented',
-  REJECTED = 'rejected'
+  CHANGES_REQUESTED = 'changes_requested'
 }

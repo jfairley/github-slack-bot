@@ -254,9 +254,9 @@ export const messenger = controller => {
                   color = undefined;
                   textSummary = `:eyes: *Commented*`;
                   break;
-                case ReviewState.REJECTED:
+                case ReviewState.CHANGES_REQUESTED:
                   color = SlackAttachmentColor.DANGER;
-                  textSummary = `:x: *Rejected*`;
+                  textSummary = `:x: *Changes Requested*`;
                   break;
               }
               convo.say({
