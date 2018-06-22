@@ -4,6 +4,7 @@ export * from './issue-state';
 export * from './link';
 export * from './mergeable-state';
 export * from './organization';
+export * from './pull-request-review-action';
 export * from './pull-request-review-webhook';
 export * from './repository';
 export * from './status';
