@@ -31,6 +31,10 @@ if (!process.env.SLACK_BOT_TOKEN) {
   process.exit(1);
 }
 
+const checkEmoji = ':white_check_mark:';
+const eyesEmoji = ':eyes:';
+const xEmoji = ':x:';
+
 export const messenger = controller => {
   // start the bot
   const bot = controller
@@ -248,15 +252,15 @@ export const messenger = controller => {
               switch (payload.review.state) {
                 case ReviewState.APPROVED:
                   color = SlackAttachmentColor.GOOD;
-                  textSummary = `:white_check_mark: *Approved*`;
+                  textSummary = `${checkEmoji} *Approved*`;
                   break;
                 case ReviewState.COMMENTED:
                   color = undefined;
-                  textSummary = `:eyes: *Commented*`;
+                  textSummary = `${eyesEmoji} *Commented*`;
                   break;
                 case ReviewState.CHANGES_REQUESTED:
                   color = SlackAttachmentColor.DANGER;
-                  textSummary = `:x: *Changes Requested*`;
+                  textSummary = `${xEmoji} *Changes Requested*`;
                   break;
               }
               convo.say({
@@ -335,7 +339,7 @@ export const messenger = controller => {
                                 : SlackAttachmentColor.DANGER,
                             title: `#${issue.number}: ${issue.title}`,
                             title_link: issue.html_url,
-                            text: `${payload.state === StatusState.SUCCESS ? ':white_check_mark:' : ':x:'} *${
+                            text: `${payload.state === StatusState.SUCCESS ? checkEmoji : xEmoji} *${
                               payload.context
                             }*: ${payload.description}`,
                             mrkdwn_in: ['text']
