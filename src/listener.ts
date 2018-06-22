@@ -13,6 +13,7 @@ import {
   StatusState,
   StatusWebhook
 } from './models/github';
+import { PullRequestReviewAction } from './models/github/pull-request-review-action';
 import { ReviewState } from './models/github/review-state';
 import { SlackAttachmentColor } from './models/slack';
 
@@ -34,6 +35,7 @@ if (!process.env.SLACK_BOT_TOKEN) {
 const checkEmoji = ':white_check_mark:';
 const eyesEmoji = ':eyes:';
 const xEmoji = ':x:';
+const warningEmoji = ':warning:';
 
 export const messenger = controller => {
   // start the bot
@@ -237,6 +239,10 @@ export const messenger = controller => {
           // send message only to the PR owner
           return;
         }
+        if (payload.sender.login === user.github_user) {
+          // do not send messages for own actions
+          return;
+        }
 
         // direct message to user
         bot.startPrivateConversation(
@@ -247,20 +253,39 @@ export const messenger = controller => {
             if (err) {
               console.error('failed to start private conversation', err);
             } else {
-              let color;
-              let textSummary;
-              switch (payload.review.state) {
-                case ReviewState.APPROVED:
-                  color = SlackAttachmentColor.GOOD;
-                  textSummary = `${checkEmoji} *Approved*`;
+              let attachmentColor;
+              let attachmentText;
+              switch (payload.action) {
+                case PullRequestReviewAction.SUBMITTED:
+                case PullRequestReviewAction.EDITED:
+                  switch (payload.review.state) {
+                    case ReviewState.APPROVED:
+                      attachmentColor = SlackAttachmentColor.GOOD;
+                      attachmentText = `${checkEmoji} *Approved*`;
+                      break;
+                    case ReviewState.COMMENTED:
+                      attachmentColor = undefined;
+                      attachmentText = `${eyesEmoji} *Commented*`;
+                      break;
+                    case ReviewState.CHANGES_REQUESTED:
+                      attachmentColor = SlackAttachmentColor.DANGER;
+                      attachmentText = `${xEmoji} *Changes Requested*`;
+                      break;
+                  }
+                  if (payload.review.body) {
+                    attachmentText += `\n${payload.review.body}`;
+                  }
                   break;
-                case ReviewState.COMMENTED:
-                  color = undefined;
-                  textSummary = `${eyesEmoji} *Commented*`;
+                case PullRequestReviewAction.DISMISSED:
+                  if (payload.sender.login !== payload.review.user.login) {
+                    attachmentColor = SlackAttachmentColor.WARNING;
+                    attachmentText = `\n${warningEmoji} *${payload.sender.login}* dismissed a review from *${
+                      payload.review.user.login
+                    }*`;
+                  } // else show no extra text
                   break;
-                case ReviewState.CHANGES_REQUESTED:
-                  color = SlackAttachmentColor.DANGER;
-                  textSummary = `${xEmoji} *Changes Requested*`;
+                default:
+                  console.error('unsupported pull request review action', payload.action);
                   break;
               }
               convo.say({
@@ -269,10 +294,10 @@ export const messenger = controller => {
                 }*:`,
                 attachments: [
                   {
-                    color,
+                    color: attachmentColor,
                     title: `#${payload.pull_request.number}: ${payload.pull_request.title}`,
-                    title_link: payload.pull_request.html_url,
-                    text: `${textSummary}\n${payload.review.body}`,
+                    title_link: payload.review.html_url,
+                    text: attachmentText,
                     mrkdwn_in: ['text']
                   }
                 ]

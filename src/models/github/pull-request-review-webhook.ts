@@ -1,11 +1,12 @@
 import { IssueState } from './issue-state';
 import { Link } from './link';
+import { PullRequestReviewAction } from './pull-request-review-action';
 import { Repository } from './repository';
 import { ReviewState } from './review-state';
 import { Userish } from './userish';
 
 export interface PullRequestReviewWebhook {
-  action: 'submitted' | 'edited' | 'dismissed';
+  action: PullRequestReviewAction;
   review: {
     id: number;
     node_id: string;
