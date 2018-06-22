@@ -11,10 +11,10 @@ import {
   MergeableState,
   PullRequestReviewAction,
   PullRequestReviewWebhook,
+  ReviewState,
   StatusState,
   StatusWebhook
 } from './models/github';
-import { ReviewState } from './models/github/review-state';
 import { SlackAttachmentColor } from './models/slack';
 
 if (!process.env.GITHUB_TOKEN) {

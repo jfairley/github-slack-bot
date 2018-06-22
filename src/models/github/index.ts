@@ -7,6 +7,7 @@ export * from './organization';
 export * from './pull-request-review-action';
 export * from './pull-request-review-webhook';
 export * from './repository';
+export * from './review-state';
 export * from './status';
 export * from './status-webhook';
 export * from './userish';
