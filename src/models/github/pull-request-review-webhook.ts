@@ -77,7 +77,12 @@ export interface PullRequestReviewWebhook {
       commits: Link;
       statuses: Link;
     };
-    author_association: string;
+    author_association: 'CONTRIBUTOR' | string;
+  };
+  changes: {
+    [key: string]: {
+      from: string;
+    };
   };
   repository: Repository;
   sender: Userish;
