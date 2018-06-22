@@ -260,7 +260,7 @@ export const messenger = controller => {
                   break;
               }
               convo.say({
-                text: `Review ${payload.action} for *${payload.pull_request.base.repo.name}* by *${
+                text: `Review ${payload.action} for *${payload.pull_request.base.repo.full_name}* by *${
                   payload.sender.login
                 }*:`,
                 attachments: [
