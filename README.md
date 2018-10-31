@@ -1,5 +1,7 @@
 # Slack Bot for Github
 
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/jfairley/github-slack-bot.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/jfairley/github-slack-bot/alerts/)
+[![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/jfairley/github-slack-bot.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/jfairley/github-slack-bot/context:javascript)
 [![CircleCI](https://circleci.com/gh/jfairley/github-slack-bot.svg?style=svg)](https://circleci.com/gh/jfairley/github-slack-bot)
 [![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/github-slack-bot/Lobby)
 
