@@ -25,7 +25,7 @@
     "semantic-release": "15.6.0",
     "tslint": "5.10.0",
     "tslint-config-prettier": "1.13.0",
-    "typescript": "3.1.6"
+    "typescript": "3.2.2"
   },
   "homepage": "https://github.com/jfairley/github-slack-bot#readme",
   "keywords": [
@@ -41,7 +41,7 @@
     "url": "git+https://github.com/jfairley/github-slack-bot.git"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --build",
     "commit": "commit",
     "fixpack": "fixpack",
     "lint": "tslint --project tsconfig.json -c tslint.json",
