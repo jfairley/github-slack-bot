@@ -5,7 +5,7 @@
   "author": "Jeff Fairley",
   "bugs": "https://github.com/jfairley/github-slack-bot/issues",
   "dependencies": {
-    "@octokit/rest": "15.9.2",
+    "@octokit/rest": "15.18.1",
     "@octokit/webhooks": "4.0.0",
     "bluebird": "3.5.1",
     "botkit": "0.6.14",
