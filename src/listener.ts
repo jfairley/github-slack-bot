@@ -5,7 +5,6 @@ import { SlackMessage } from 'botkit';
 import * as http from 'http';
 import { assign, forEach, get, has, includes, isEmpty, some } from 'lodash';
 import {
-  Commit,
   Issue,
   IssueState,
   MergeableState,
@@ -320,18 +319,18 @@ export const messenger = controller => {
 
     // search for issues
     Promise.resolve(github.search.issues({ q: payload.sha }))
-      .then(res => res.data.items as Issue[])
+      .then(res => res.data.items)
       // verify that the issue is not closed
       .filter((issue: Issue) => issue.state !== IssueState.CLOSED)
       // verify that the commit is the latest, ignoring those for which it isn't
       .filter((issue: Issue) =>
-        github.pullRequests
-          .getCommits({
+        github.pulls
+          .listCommits({
             number: issue.number,
             owner: payload.repository.owner.login,
             repo: payload.repository.name
           })
-          .then(res => res.data as Commit[])
+          .then(res => res.data)
           .then(commits => commits[commits.length - 1].sha === payload.sha)
       )
       // notify statuses for each issue
