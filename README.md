@@ -2,6 +2,7 @@
 
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/jfairley/github-slack-bot.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/jfairley/github-slack-bot/alerts/)
 [![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/jfairley/github-slack-bot.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/jfairley/github-slack-bot/context:javascript)
+[![CodeFactor](https://www.codefactor.io/repository/github/jfairley/github-slack-bot/badge)](https://www.codefactor.io/repository/github/jfairley/github-slack-bot)
 [![CircleCI](https://circleci.com/gh/jfairley/github-slack-bot.svg?style=svg)](https://circleci.com/gh/jfairley/github-slack-bot)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 [![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/github-slack-bot/Lobby)
