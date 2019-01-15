@@ -132,9 +132,9 @@ export const messenger = controller => {
         .map(group => filterUninterestingLinks(group, snippets))
         .filter(group => !isEmpty(group))
         .map(group =>
-          Promise.map(group, (body: any) => {
+          Promise.map(group as any, (body: any) => {
             if (has(body, 'pull_request')) {
-              return github.pullRequests
+              return github.pulls
                 .get({
                   number: body.number,
                   owner: body.repository.owner.login,
@@ -289,7 +289,7 @@ function getSnippets(data, withUser) {
  */
 function fetchOrgIssues() {
   return github.issues
-    .getForOrg({
+    .listForOrg({
       org: 'levelsbeyond',
       filter: 'all',
       state: 'open'
