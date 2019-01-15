@@ -132,7 +132,7 @@ export const messenger = controller => {
         .map(group => filterUninterestingLinks(group, snippets))
         .filter(group => !isEmpty(group))
         .map(group =>
-          Promise.map(<any>group, (body: any) => {
+          Promise.map(group as any, (body: any) => {
             if (has(body, 'pull_request')) {
               return github.pulls
                 .get({
