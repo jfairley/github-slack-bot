@@ -4,23 +4,21 @@ jobs:
     docker:
       - image: node:8@sha256:6d6c00a85a9859339f38eeace91b1f5554e7c7cf1165d3517cff991bf798ee2f
 
-    working_directory: ~/repo
-
     steps:
       - checkout:
           post: git pull --ff-only origin "refs/pull/${CIRCLE_PULL_REQUEST//*pull\//}/merge"
 
       - restore_cache:
           keys:
-            - node8-{{ checksum "package.json" }}
-            - node8-
+            - node8-{{ arch }}-{{ checksum "package.json" }}
+            - node8-{{ arch }}
 
       - run: npm install --quiet
 
       - save_cache:
-          key: node8-{{ checksum "package.json" }}
+          key: node8-{{ arch }}-{{ checksum "package.json" }}
           paths:
-            - ~/repo/node_modules
+            - node_modules
 
       - run: npm run lint
 
