@@ -5,7 +5,8 @@
     "lib": [
       "es2017",
       "esnext.asynciterable"
-    ]
+    ],
+    "resolveJsonModule": true
   },
   "include": [
     "index.ts",

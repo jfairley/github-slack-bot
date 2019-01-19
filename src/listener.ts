@@ -16,17 +16,19 @@ import {
 } from './models/github';
 import { SlackAttachmentColor } from './models/slack';
 
-if (!process.env.GITHUB_TOKEN) {
+const { GITHUB_TOKEN, GITHUB_WEBHOOK_PORT, GITHUB_WEBHOOK_SECRET, SLACK_BOT_TOKEN } = process.env;
+
+if (!GITHUB_TOKEN) {
   console.error('Error: Specify GITHUB_TOKEN in environment');
   process.exit(1);
 }
 
-if (!process.env.GITHUB_WEBHOOK_SECRET) {
+if (!GITHUB_WEBHOOK_SECRET) {
   console.error('Error: Specify GITHUB_WEBHOOK_SECRET in environment');
   process.exit(1);
 }
 
-if (!process.env.SLACK_BOT_TOKEN) {
+if (!SLACK_BOT_TOKEN) {
   console.error('Error: Specify SLACK_BOT_TOKEN in environment');
   process.exit(1);
 }
@@ -40,25 +42,25 @@ export const messenger = controller => {
   // start the bot
   const bot = controller
     .spawn({
-      token: process.env.SLACK_BOT_TOKEN
+      token: SLACK_BOT_TOKEN
     })
     .startRTM();
 
   // github hooks
   const webhooksApi = new WebhooksApi({
-    secret: process.env.GITHUB_WEBHOOK_SECRET
+    secret: GITHUB_WEBHOOK_SECRET
   });
 
   // github api
   const github = new Github();
   github.authenticate({
     type: 'token',
-    token: process.env.GITHUB_TOKEN
+    token: GITHUB_TOKEN
   });
 
-  http.createServer(webhooksApi.middleware).listen(process.env.GITHUB_WEBHOOK_PORT);
+  http.createServer(webhooksApi.middleware).listen(GITHUB_WEBHOOK_PORT);
 
-  webhooksApi.on('*', ({ id, name, payload }) => {
+  webhooksApi.on('*', ({ name, payload }) => {
     try {
       switch (name) {
         case 'issues':
