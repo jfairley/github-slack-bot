@@ -1,7 +1,9 @@
 module.exports = {
-  verifyConditions: ['@semantic-release/github'],
-  prepare: [],
-  publish: ['@semantic-release/github'],
+  plugins: [
+    '@semantic-release/commit-analyzer',
+    '@semantic-release/release-notes-generator',
+    '@semantic-release/github'
+  ],
   branch: 'master',
   tagFormat: '${version}'
 };
