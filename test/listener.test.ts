@@ -39,7 +39,7 @@ describe('listener', () => {
     beforeEach(() => messenger(controller));
 
     it('should configure slack bot', () => {
-      expect(controller.spawn).toHaveBeenCalledWith({ token: process.env.SLACK_BOT_TOKEN });
+      expect(controller.spawn).toHaveBeenCalledWith({ token: 'test-slack-bot-token' });
       expect(controller.spawn.mock.results[0].value.startRTM).toHaveBeenCalledTimes(1);
     });
 
@@ -47,7 +47,7 @@ describe('listener', () => {
       const httpCreateServer = require('http').createServer;
       expect(httpCreateServer).toHaveBeenCalledTimes(1);
       expect(httpCreateServer).toHaveBeenCalledWith(getWebhooks().middleware);
-      expect(httpCreateServer.mock.results[0].value.listen).toHaveBeenCalledWith(process.env.GITHUB_WEBHOOK_PORT);
+      expect(httpCreateServer.mock.results[0].value.listen).toHaveBeenCalledWith('12345');
       expect(getWebhooks().on).toHaveBeenCalledWith('*', expect.any(Function));
     });
 
@@ -56,7 +56,7 @@ describe('listener', () => {
       expect(getGithub().authenticate).toHaveBeenCalledTimes(1);
       expect(getGithub().authenticate).toHaveBeenCalledWith({
         type: 'token',
-        token: process.env.GITHUB_TOKEN
+        token: 'test-github-token'
       });
     });
 

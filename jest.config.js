@@ -6,5 +6,6 @@ module.exports = {
   collectCoverageFrom: ['index.ts', 'src/**/*.ts'],
   preset: 'ts-jest',
   reporters: ['default', 'jest-junit'],
+  setupFiles: ['<rootDir>/test/initEnv.ts'],
   testMatch: ['**/*.test.ts']
 };
