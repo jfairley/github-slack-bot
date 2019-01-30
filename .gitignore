@@ -6,3 +6,4 @@ storage/
 index.js
 src/**/*.js
 test/**/*.js
+package-lock.json
