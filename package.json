@@ -47,7 +47,6 @@
     "url": "git+https://github.com/jfairley/github-slack-bot.git"
   },
   "scripts": {
-    "build": "tsc --build",
     "commit": "commit",
     "fixpack": "fixpack",
     "lint": "tslint --project tsconfig.json -c tslint.json",
