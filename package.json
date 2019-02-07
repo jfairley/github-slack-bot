@@ -40,7 +40,7 @@
     "slackbot"
   ],
   "license": "ISC",
-  "main": "index.js",
+  "main": "index.ts",
   "private": true,
   "repository": {
     "type": "git",
