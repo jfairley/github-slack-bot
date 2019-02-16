@@ -30,7 +30,7 @@
     "semantic-release": "15.6.0",
     "ts-jest": "23.10.5",
     "tslint": "5.12.1",
-    "tslint-config-prettier": "1.17.0",
+    "tslint-config-prettier": "1.18.0",
     "typescript": "3.3.3"
   },
   "homepage": "https://github.com/jfairley/github-slack-bot#readme",
