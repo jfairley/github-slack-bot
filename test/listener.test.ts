@@ -53,10 +53,8 @@ describe('listener', () => {
 
     it('should configure github rest API', () => {
       expect(Github).toHaveBeenCalledTimes(1);
-      expect(getGithub().authenticate).toHaveBeenCalledTimes(1);
-      expect(getGithub().authenticate).toHaveBeenCalledWith({
-        type: 'token',
-        token: 'test-github-token'
+      expect(Github).toHaveBeenCalledWith({
+        auth: 'token test-github-token'
       });
     });
 

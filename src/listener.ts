@@ -52,10 +52,8 @@ export const messenger = controller => {
   });
 
   // github api
-  const github = new Github();
-  github.authenticate({
-    type: 'token',
-    token: GITHUB_TOKEN
+  const github = new Github({
+    auth: `token ${GITHUB_TOKEN}`
   });
 
   http.createServer(webhooksApi.middleware).listen(GITHUB_WEBHOOK_PORT);

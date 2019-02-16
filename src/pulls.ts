@@ -20,10 +20,8 @@ if (!process.env.GITHUB_TOKEN) {
   process.exit(1);
 }
 
-const github = new Github();
-github.authenticate({
-  type: 'token',
-  token: process.env.GITHUB_TOKEN
+const github = new Github({
+  auth: `token ${process.env.GITHUB_TOKEN}`
 });
 
 export const commands = [
