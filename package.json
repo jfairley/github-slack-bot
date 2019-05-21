@@ -5,13 +5,19 @@
   "author": "Jeff Fairley",
   "bugs": "https://github.com/jfairley/github-slack-bot/issues",
   "dependencies": {
-    "@octokit/rest": "16.15.0",
+    "@google-cloud/datastore": "4.0.0",
+    "@google-cloud/debug-agent": "3.2.0",
+    "@google-cloud/logging-winston": "0.11.1",
+    "@octokit/rest": "16.26.0",
     "@octokit/webhooks": "5.1.2",
+    "@slack/web-api": "5.0.1",
+    "async": "3.0.1",
     "bluebird": "3.5.1",
     "botkit": "0.6.14",
     "lodash": "4.17.10",
     "moment": "2.22.2",
-    "ts-node": "8.0.2"
+    "tsscmp": "1.0.6",
+    "winston": "3.2.1"
   },
   "devDependencies": {
     "@commitlint/cli": "7.5.2",
@@ -19,6 +25,7 @@
     "@commitlint/prompt-cli": "7.5.0",
     "@octokit/webhooks-definitions": "1.1.2",
     "@types/bluebird": "3.5.20",
+    "@types/express": "4.17.0",
     "@types/jest": "24.0.5",
     "@types/lodash": "4.14.110",
     "fixpack": "2.3.1",
@@ -29,9 +36,10 @@
     "prettier": "1.16.4",
     "semantic-release": "15.6.0",
     "ts-jest": "23.10.5",
+    "ts-node": "8.0.2",
     "tslint": "5.12.1",
     "tslint-config-prettier": "1.18.0",
-    "typescript": "3.3.3"
+    "typescript": "3.4.5"
   },
   "homepage": "https://github.com/jfairley/github-slack-bot#readme",
   "keywords": [
@@ -40,19 +48,23 @@
     "slackbot"
   ],
   "license": "ISC",
-  "main": "index.ts",
+  "main": "index.js",
   "private": true,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jfairley/github-slack-bot.git"
   },
   "scripts": {
+    "build": "tsc",
     "commit": "commit",
+    "deploy": "gcloud functions deploy slack --env-vars-file .env.yml --runtime=nodejs8 --trigger-http",
     "fixpack": "fixpack",
     "lint": "tslint --project tsconfig.json -c tslint.json",
+    "predeploy": "npm run build",
     "pretest": "jest --clearCache",
     "release": "semantic-release",
     "start": "ts-node index.ts",
+    "start:slack": "npx @google-cloud/functions-framework --target=slack",
     "test": "jest --coverage"
   }
 }
