@@ -4,8 +4,10 @@ import * as moment from 'moment';
 import * as nock from 'nock';
 import * as randomstring from 'randomstring';
 import { slack } from '..';
-import { configureNewTeamPayload } from '../src/functions/slack/configure';
+import { configureExistingTeamPayload, configureNewTeamPayload } from '../src/functions/slack/configure';
+import { User } from '../src/models';
 import { isVerified } from '../src/verifySignature';
+import { Datastore } from '@google-cloud/datastore';
 
 describe('slack function', () => {
   let githubToken: string;
@@ -189,6 +191,24 @@ describe('slack function', () => {
       req.body.text = 'configure my-team';
       expectPostEphemeral({
         ...configureNewTeamPayload('my-team'),
+        channel: channel.id,
+        user: user.id
+      });
+      await slack(req, res);
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalled();
+      slackScope.isDone();
+    });
+
+    it('should handle configured team', async () => {
+      const testUser: User = {
+        id: 'foo',
+        name: 'my-team'
+      };
+      (<jest.Mock>new Datastore().get).mockReturnValue(Promise.resolve([testUser]));
+      req.body.text = 'configure my-team';
+      expectPostEphemeral({
+        ...configureExistingTeamPayload(testUser, false),
         channel: channel.id,
         user: user.id
       });

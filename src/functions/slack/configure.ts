@@ -63,7 +63,7 @@ export function configureNewTeamPayload(team: string): SlackMessageArguments {
   };
 }
 
-function configureExistingTeamPayload(user: User, forUser: boolean): SlackMessageArguments {
+export function configureExistingTeamPayload(user: User, forUser: boolean): SlackMessageArguments {
   const title = `:gear: Configure the bot for ${forUser ? 'the current user' : `team: ${user.name}`}`;
   return {
     text: title,

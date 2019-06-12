@@ -1,4 +1,5 @@
-module.exports.Datastore = function() {
-  this.key = jest.fn();
-  this.get = jest.fn().mockReturnValue(Promise.resolve([]));
+const instance = {
+  key: jest.fn(),
+  get: jest.fn().mockReturnValue(Promise.resolve([]))
 };
+module.exports.Datastore = jest.fn(() => instance);
