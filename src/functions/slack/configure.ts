@@ -27,7 +27,7 @@ function parseActionId(actionId: string): [Action, string] {
   return actionId.split('|') as [Action, string];
 }
 
-function configureNewTeamPayload(team: string): SlackMessageArguments {
+export function configureNewTeamPayload(team: string): SlackMessageArguments {
   return {
     text: `Unrecognized team: ${team}`,
     blocks: [

@@ -73,9 +73,9 @@ export default async function slackFn(req: Request, res: Response) {
         await handleUnrecognized(message);
       }
     }
-  } catch (e) {
-    logger.error('Unexpected error', e);
-    await postEphemeral(message, `Unhandled error:\n${e}`);
+  } catch (err) {
+    logger.error(err.toString());
+    await postEphemeral(message, err.toString());
   } finally {
     // end
     logger.info(`execution time: ${moment().diff(start, 'milliseconds')} ms`);

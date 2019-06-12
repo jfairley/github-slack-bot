@@ -7,5 +7,6 @@ module.exports = {
   preset: 'ts-jest',
   reporters: ['default', 'jest-junit'],
   setupFiles: ['<rootDir>/test/initEnv.ts'],
+  testEnvironment: 'node',
   testMatch: ['**/*.test.ts']
 };

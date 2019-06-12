@@ -28,16 +28,16 @@ logger.debug('creating slack client ...');
 const web = new WebClient(process.env.SLACK_ACCESS_TOKEN, {
   logger: {
     debug(...msgs) {
-      logger.debug(`[SLACK CLIENT]: ${JSON.stringify(msgs)}`);
+      logger.debug(`[SLACK CLIENT]: ${msgs}`);
     },
     info(...msgs) {
-      logger.info(`[SLACK CLIENT]: ${JSON.stringify(msgs)}`);
+      logger.info(`[SLACK CLIENT]: ${msgs}`);
     },
     warn(...msgs) {
-      logger.warn(`[SLACK CLIENT]: ${JSON.stringify(msgs)}`);
+      logger.warn(`[SLACK CLIENT]: ${msgs}`);
     },
     error(...msgs) {
-      logger.error(`[SLACK CLIENT]: ${JSON.stringify(msgs)}`);
+      logger.error(`[SLACK CLIENT]: ${msgs}`);
     },
     setLevel() {},
     setName() {}
