@@ -326,7 +326,7 @@ async function checkStatus(payload: StatusWebhook) {
     issues.map(async issue => {
       // verify that the commit is the latest, ignoring those for which it isn't
       const commits = (await github.pulls.listCommits({
-        number: issue.number,
+        pull_number: issue.number,
         owner: payload.repository.owner.login,
         repo: payload.repository.name
       })).data;
