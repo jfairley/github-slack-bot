@@ -21,6 +21,16 @@ Basically, I'm annoyed by the default Github application. If your team is not ti
 
 I would love to host this bad boy in a single place and add it to the Slack marketplace, but I expect that would bump me out of the free tier, and I'm not interested in figuring out how to raise money.
 
+### A Note About Code Starts
+
+This is hosted as a Google Cloud Function, which will go into cold storage when not active. In the morning, for instance, you may experience a laggy response upon first use. This is a cold start problem.
+
+#### Work-Around?
+
+Kinda. Configure a Google Cloud Scheduler to ping your function every so often. It's not fool-proof, because Google will ice a function after various amounts of time based on overall system load, but it's a try.
+
+https://cloud.google.com/scheduler/ 
+
 ## Setup and Runtime
 
 As mentioned, this is self-hosted, so there's more to it than the `Install App` button you'd see from the Slack marketplace. I'll walk you through the setup.
@@ -154,6 +164,10 @@ npm install
 npm run deploy:github
 npm run deploy:slack
 ```
+
+### Try It!
+
+You should be able to trigger `/github help` and see a response.
 
 ## Develop
 
