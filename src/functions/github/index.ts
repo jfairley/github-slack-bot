@@ -67,7 +67,7 @@ export default async function githubWebhookFn(req: Request, res: Response) {
           case 'opened':
           case 'reopened':
           case 'edited':
-            logger.debug(`Notify issue for ${JSON.stringify(payload, null, 2)}`);
+            logger.debug(`Notify issue for ${name}, ${payload.action}`);
             await notifyIssue(payload);
             break;
         }
@@ -78,17 +78,17 @@ export default async function githubWebhookFn(req: Request, res: Response) {
         switch (payload.action) {
           case 'created':
           case 'edited':
-            logger.debug(`Notify issue for ${JSON.stringify(payload, null, 2)}`);
+            logger.debug(`Notify issue for ${name}, ${payload.action}`);
             await notifyIssue(payload);
             break;
         }
         break;
       case 'pull_request_review':
-        logger.debug(`Notify PR review request for ${JSON.stringify(payload, null, 2)}`);
+        logger.debug(`Notify PR review request for ${name}`);
         await notifyPullRequestReview(payload);
         break;
       case 'status':
-        logger.debug(`Notify status for ${JSON.stringify(payload, null, 2)}`);
+        logger.debug(`Notify status for ${name}`);
         await checkStatus(payload);
         break;
     }
