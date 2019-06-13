@@ -59,19 +59,7 @@ export default async function slackFn(req: Request, res: Response) {
       return handleConfiguration(payload);
     } else {
       // look for a user input match
-      const text = message.text.trim();
-      logger.debug(`Beginning command pattern checking for ${text}`);
-      if (helpPattern.test(text)) {
-        return postEphemeral(message, getHelpText());
-      }
-      const action = [...actions, ...configureActions].find(action => !!action.pattern.exec(text));
-      if (action) {
-        logger.debug('Found action match');
-        await action.callback(message, text);
-      } else {
-        logger.debug('No matching action');
-        await handleUnrecognized(message);
-      }
+      await handleAction(message);
     }
   } catch (err) {
     logger.error(err.toString());
@@ -80,6 +68,27 @@ export default async function slackFn(req: Request, res: Response) {
     // end
     logger.info(`execution time: ${moment().diff(start, 'milliseconds')} ms`);
   }
+}
+
+async function handleAction(message: IncomingSlackMessageBody) {
+  const text = message.text.trim();
+
+  logger.debug(`Beginning command pattern checking for ${text}`);
+  if (helpPattern.test(text)) {
+    return postEphemeral(message, getHelpText());
+  }
+
+  for (const action of [...actions, ...configureActions]) {
+    const results = action.pattern.exec(text);
+    if (results) {
+      logger.debug('Found action match');
+      return action.callback(message, results[results.length - 1]);
+    }
+  }
+
+  // didn't find a match
+  logger.debug('No matching action');
+  await handleUnrecognized(message);
 }
 
 async function handleUnrecognized(message: IncomingSlackMessageBody) {
