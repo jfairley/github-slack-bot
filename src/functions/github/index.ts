@@ -299,7 +299,7 @@ async function checkStatus(payload: StatusWebhook) {
     findUsers().then(users => users.filter(user => [author, committer].includes(user.github_user))),
     // find PRs relevant to the given commit status
     github.search
-      .issues({ q: payload.sha })
+      .issuesAndPullRequests({ q: payload.sha })
       .then(res => res.data.items)
       // verify that the issue is not closed
       .then(issues => issues.filter((issue: Issue) => issue.state !== IssueState.CLOSED))
