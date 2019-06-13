@@ -113,7 +113,7 @@ You'll need to configure webhooks and set up an access token for github api comm
 
 1. Crack open your organization settings in github.
     - NOTE: This URL will be different for each org.
-    - https://github.com/organizations/<my-org>/settings/hooks
+    - `https://github.com/organizations/<my-org>/settings/hooks`
 1. Click `Add Webhook`.
 1. `Payload URL`: Insert the **github** function URL copied from earlier.
 1. `Content type`: `application/json`
