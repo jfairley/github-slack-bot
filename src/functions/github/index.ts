@@ -211,7 +211,7 @@ async function notifyIssue(data) {
         await postMessage({ channel_id: user.slack_channel }, message);
       } else {
         // direct message to user
-        await postMessage({ channel_id: user.id }, message);
+        await postMessage({ channel_id: user.name }, message);
       }
     })
   );
@@ -268,7 +268,7 @@ async function notifyPullRequestReview(payload: PullRequestReviewWebhook) {
 
       // direct message to user
       await postMessage(
-        { channel_id: user.id },
+        { channel_id: user.name },
         {
           text: `Review ${payload.action} for *${payload.pull_request.base.repo.full_name}* by *${
             payload.sender.login
@@ -339,7 +339,7 @@ async function checkStatus(payload: StatusWebhook) {
       await Promise.all(
         users.map(user =>
           postMessage(
-            { channel_id: user.id },
+            { channel_id: user.name },
             {
               text: `Updated commit status on *${payload.name}* by *${payload.sender.login}*:`,
               attachments: [
