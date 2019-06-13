@@ -33,7 +33,7 @@ export const actions: Array<{
   {
     commands: ['list <team>', '<team>'],
     message: 'show matching issues and pull-requests for the specified team',
-    pattern: /^(list|pulls)\s+(.*)$/i,
+    pattern: /^(list|pulls)\s+(.+)$/i,
     callback: listPRs
   },
   {
@@ -45,7 +45,7 @@ export const actions: Array<{
   {
     command: 'details <team>',
     message: 'show the configuration for the specified team',
-    pattern: /^details\s+(.*)$/i,
+    pattern: /^details\s+(.+)$/i,
     callback: teamDetails
   },
   {
