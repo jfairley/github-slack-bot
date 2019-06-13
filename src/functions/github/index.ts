@@ -67,6 +67,7 @@ export default async function githubWebhookFn(req: Request, res: Response) {
           case 'opened':
           case 'reopened':
           case 'edited':
+            logger.debug(`Notify issue for ${JSON.stringify(payload, null, 2)}`);
             await notifyIssue(payload);
             break;
         }
@@ -77,14 +78,17 @@ export default async function githubWebhookFn(req: Request, res: Response) {
         switch (payload.action) {
           case 'created':
           case 'edited':
+            logger.debug(`Notify issue for ${JSON.stringify(payload, null, 2)}`);
             await notifyIssue(payload);
             break;
         }
         break;
       case 'pull_request_review':
+        logger.debug(`Notify PR review request for ${JSON.stringify(payload, null, 2)}`);
         await notifyPullRequestReview(payload);
         break;
       case 'status':
+        logger.debug(`Notify status for ${JSON.stringify(payload, null, 2)}`);
         await checkStatus(payload);
         break;
     }
@@ -305,8 +309,15 @@ async function checkStatus(payload: StatusWebhook) {
       .then(issues => issues.filter((issue: Issue) => issue.state !== IssueState.CLOSED))
   ]);
 
-  if (isEmpty(users) || isEmpty(issues)) {
+  if (isEmpty(users)) {
     // nothing to do
+    logger.debug('no users to notify');
+    return;
+  }
+
+  if (isEmpty(issues)) {
+    // nothing to do
+    logger.debug('no matching open issues found');
     return;
   }
 
@@ -320,6 +331,7 @@ async function checkStatus(payload: StatusWebhook) {
         repo: payload.repository.name
       })).data;
       if (commits[commits.length - 1].sha !== payload.sha) {
+        logger.debug('Ignoring commit which is not the latest');
         return;
       }
 
