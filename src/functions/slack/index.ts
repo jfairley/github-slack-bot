@@ -23,7 +23,7 @@ export default async function slackFn(req: Request, res: Response) {
       const msg = 'Error: Unable to verify slack secret';
       logger.error(msg);
       return res
-        .status(500)
+        .status(401)
         .send(msg)
         .end();
     }
@@ -50,7 +50,7 @@ export default async function slackFn(req: Request, res: Response) {
 
     // ack to slack
     logger.debug('Ack to slack...');
-    res.status(200).send();
+    res.sendStatus(202);
 
     if (typeof message.payload === 'string') {
       // interactive message callback

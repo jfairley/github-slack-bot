@@ -109,6 +109,7 @@ describe('slack function', () => {
       }
     };
     res = {
+      sendStatus: jest.fn().mockReturnThis(),
       status: jest.fn().mockReturnThis(),
       send: jest.fn().mockReturnThis(),
       end: jest.fn().mockReturnThis()
@@ -131,7 +132,7 @@ describe('slack function', () => {
       delete req.headers['x-slack-signature'];
       delete req.headers['x-slack-request-timestamp'];
       await slack(req, res);
-      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.status).toHaveBeenCalledWith(401);
       expect(res.send).toHaveBeenCalledWith('Error: Unable to verify slack secret');
       expect(res.end).toHaveBeenCalled();
     });
@@ -142,7 +143,7 @@ describe('slack function', () => {
         .unix()
         .toString();
       await slack(req, res);
-      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.status).toHaveBeenCalledWith(401);
       expect(res.send).toHaveBeenCalledWith('Error: Unable to verify slack secret');
       expect(res.end).toHaveBeenCalled();
     });
@@ -150,7 +151,7 @@ describe('slack function', () => {
     it('should reject and invalid signature', async () => {
       req.headers['x-slack-signature'] = 'foo';
       await slack(req, res);
-      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.status).toHaveBeenCalledWith(401);
       expect(res.send).toHaveBeenCalledWith('Error: Unable to verify slack secret');
       expect(res.end).toHaveBeenCalled();
     });
@@ -182,8 +183,7 @@ describe('slack function', () => {
         user: user.id
       });
       await slack(req, res);
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.send).toHaveBeenCalled();
+      expect(res.sendStatus).toHaveBeenCalledWith(202);
       slackScope.isDone();
     });
   });
@@ -197,8 +197,7 @@ describe('slack function', () => {
         user: user.id
       });
       await slack(req, res);
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.send).toHaveBeenCalled();
+      expect(res.sendStatus).toHaveBeenCalledWith(202);
       slackScope.isDone();
     });
 
@@ -215,8 +214,7 @@ describe('slack function', () => {
         user: user.id
       });
       await slack(req, res);
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.send).toHaveBeenCalled();
+      expect(res.sendStatus).toHaveBeenCalledWith(202);
       slackScope.isDone();
     });
   });

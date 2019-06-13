@@ -53,13 +53,18 @@ export default async function githubWebhookFn(req: Request, res: Response) {
       const msg = 'Error: Unable to verify github secret';
       logger.error(msg);
       return res
-        .status(500)
+        .status(401)
         .send(msg)
         .end();
     }
 
+    // ack to github
+    res.sendStatus(202);
+
+    // handle codes
     const name = req.headers['x-github-event'];
     const payload = req.body;
+    logger.debug(`handling request type ${name}: ${JSON.stringify(req.body, null, 2)}`);
     switch (name) {
       case 'issues':
       case 'pull_request':
