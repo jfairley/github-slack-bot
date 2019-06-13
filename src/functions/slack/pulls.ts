@@ -168,7 +168,7 @@ export async function listTeams(message: IncomingSlackMessageBody) {
   return postMessage(
     message,
     `Configured teams:\n${users
-      .map(team => (/^U\w{8}$/.test(team.name) ? ` - ${team.name} (<@${team.name}>)` : ` - ${team.name}`))
+      .map(team => (/^U\w{8}$/.test(team.name) ? ` • ${team.name} (<@${team.name}>)` : ` - ${team.name}`))
       .join('\n')}`
   );
 }
