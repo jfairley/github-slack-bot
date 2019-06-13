@@ -222,7 +222,7 @@ export function teamDoesNotExist(message: IncomingSlackMessageBody, team: string
  */
 export async function fetchOrgIssues(): Promise<IssuesListForOrgResponse> {
   const res = await github.issues.listForOrg({
-    org: 'levelsbeyond',
+    org: process.env.GITHUB_ORG,
     filter: 'all',
     state: 'open'
   });
