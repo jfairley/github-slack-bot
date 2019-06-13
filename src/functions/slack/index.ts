@@ -4,7 +4,7 @@ import * as moment from 'moment';
 import { IncomingSlackMessageBody, postEphemeral } from '../../api';
 import { logger } from '../../logger';
 import { findUser } from '../../models';
-import { isVerified } from '../../verifySignature';
+import { isSlackVerified } from '../../verifySignature';
 import { actions as configureActions, handleConfiguration } from './configure';
 import { actions, listPRs } from './pulls';
 
@@ -19,7 +19,7 @@ export default async function slackFn(req: Request, res: Response) {
     logger.debug(`body: ${JSON.stringify(message, null, 2)}`);
 
     // verify
-    if (!isVerified(req)) {
+    if (!isSlackVerified(req)) {
       const msg = 'Error: Unable to verify slack secret';
       logger.error(msg);
       return res

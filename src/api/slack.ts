@@ -50,7 +50,10 @@ logger.debug('slack client created ...');
  * @param message
  * @param options
  */
-export async function postEphemeral(message: IncomingSlackMessageBody, options: string | SlackMessageArguments) {
+export async function postEphemeral(
+  message: Pick<IncomingSlackMessageBody, 'channel_id' | 'user_id'>,
+  options: string | SlackMessageArguments
+) {
   options = typeof options === 'string' ? { text: options } : options;
   return web.chat.postEphemeral({
     ...options,
@@ -72,7 +75,10 @@ export async function respondEphemeral(responseUrl: string, options: string | Sl
  * @param message
  * @param options
  */
-export async function postMessage(message: IncomingSlackMessageBody, options: string | SlackMessageArguments) {
+export async function postMessage(
+  message: Pick<IncomingSlackMessageBody, 'channel_id'>,
+  options: string | SlackMessageArguments
+) {
   options = typeof options === 'string' ? { text: options } : options;
   return web.chat.postMessage({
     ...options,

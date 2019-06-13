@@ -1,84 +1,96 @@
-import * as Github from '@octokit/rest';
-import * as WebhooksApi from '@octokit/webhooks';
+import { Datastore } from '@google-cloud/datastore';
 import * as webhookDefinitions from '@octokit/webhooks-definitions';
-import { slackbot } from 'botkit';
+import { ChatPostMessageArguments } from '@slack/web-api';
+import * as crypto from 'crypto';
 import { cloneDeep, find } from 'lodash';
-import { messenger } from '../src/listener';
+import * as nock from 'nock';
+import * as randomstring from 'randomstring';
+import { githubWebhook } from '..';
 
-jest.mock('http', () => ({
-  createServer: jest.fn().mockReturnValue({
-    listen: jest.fn()
-  })
-}));
-
-describe('listener', () => {
-  let controller;
+describe('github webhooks', () => {
+  let req;
+  let res;
+  let datastore: Datastore;
+  let githubScope: nock.Scope;
+  let slackScope: nock.Scope;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    controller = slackbot({});
   });
 
-  describe('webhooks', () => {
-    function getWebhooks() {
-      return (<jest.Mock>WebhooksApi).mock.results[0].value;
-    }
+  beforeEach(() => {
+    res = {
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
+      end: jest.fn().mockReturnThis()
+    };
+    datastore = new Datastore();
+    githubScope = nock(/api\.github\.com/).log(console.log);
+    slackScope = nock('https://slack.com').log(console.log);
+  });
 
-    function getWebhooksHandler() {
-      return getWebhooks().on.mock.calls[0][1];
-    }
+  afterEach(() => {
+    githubScope.isDone();
+    slackScope.isDone();
+  });
 
-    function getGithub() {
-      return (<jest.Mock>(<any>Github)).mock.results[0].value;
-    }
+  function getWebhooksHandler(event: string, payload: object) {
+    // generate signature
+    const algorithm = 'sha1';
+    const hmac = crypto.createHmac(algorithm, process.env.GITHUB_WEBHOOK_SECRET);
+    const hash = hmac.update(JSON.stringify(payload)).digest('hex');
+    const signature = `${algorithm}=${hash}`;
 
-    function getBot() {
-      return controller.spawn.mock.results[0].value;
-    }
+    req = {
+      body: payload,
+      headers: {
+        'x-hub-signature': signature,
+        'x-github-event': event
+      }
+    };
+    return githubWebhook(req, res);
+  }
 
-    beforeEach(() => messenger(controller));
+  function expectPostMessage(body: ChatPostMessageArguments) {
+    slackScope.options('/api/chat.postMessage').reply(200);
+    slackScope
+      .post(
+        '/api/chat.postMessage',
+        Object.entries(body)
+          .map(
+            ([key, value]) => `${key}=${encodeURIComponent(typeof value === 'string' ? value : JSON.stringify(value))}`
+          )
+          .join('&')
+      )
+      .reply(200, {
+        ok: true,
+        message_ts: [
+          randomstring.generate({ length: 10, charset: 'numeric' }),
+          randomstring.generate({ length: 6, charset: 'numeric' })
+        ].join('.')
+      });
+  }
 
-    it('should configure slack bot', () => {
-      expect(controller.spawn).toHaveBeenCalledWith({ token: 'test-slack-bot-token' });
-      expect(controller.spawn.mock.results[0].value.startRTM).toHaveBeenCalledTimes(1);
+  describe('issues', () => {
+    const issues = find(webhookDefinitions, ['name', 'issues']);
+    const editedIssueExample: any = issues.examples[0];
+
+    beforeEach(() => {
+      // sanity check
+      expect(issues.name).toEqual('issues');
+      expect(editedIssueExample.action).toEqual('edited');
     });
 
-    it('should configure github webhook listener', () => {
-      const httpCreateServer = require('http').createServer;
-      expect(httpCreateServer).toHaveBeenCalledTimes(1);
-      expect(httpCreateServer).toHaveBeenCalledWith(getWebhooks().middleware);
-      expect(httpCreateServer.mock.results[0].value.listen).toHaveBeenCalledWith('12345');
-      expect(getWebhooks().on).toHaveBeenCalledWith('*', expect.any(Function));
+    it('should ignore bot users', async () => {
+      const copiedExample = cloneDeep(editedIssueExample);
+      copiedExample.sender.type = 'Bot';
+      await getWebhooksHandler(issues.name, copiedExample);
+      expect(datastore.get).not.toHaveBeenCalled();
     });
 
-    it('should configure github rest API', () => {
-      expect(Github).toHaveBeenCalledTimes(1);
-      expect(Github).toHaveBeenCalledWith({
-        auth: 'token test-github-token'
-      });
-    });
-
-    describe('issues', () => {
-      const issues = find(webhookDefinitions, ['name', 'issues']);
-      const editedIssueExample: any = issues.examples[0];
-
-      beforeEach(() => {
-        // sanity check
-        expect(issues.name).toEqual('issues');
-        expect(editedIssueExample.action).toEqual('edited');
-      });
-
-      it('should ignore bot users', async () => {
-        const copiedExample = cloneDeep(editedIssueExample);
-        copiedExample.sender.type = 'Bot';
-        await getWebhooksHandler()({ name: issues.name, payload: copiedExample });
-        expect(controller.storage.users.all).not.toHaveBeenCalled();
-      });
-
-      it('should handle edited issues', async () => {
-        await getWebhooksHandler()({ name: issues.name, payload: editedIssueExample });
-        expect(controller.storage.users.all).toHaveBeenCalledTimes(1);
-        await controller.storage.users.all.mock.calls[0][0](null, [
+    it('should handle edited issues', async () => {
+      (<jest.Mock>datastore.get).mockReturnValue(
+        Promise.resolve([
           {
             github_user: 'not-codertocat',
             snippets: ['accidently'],
@@ -94,58 +106,62 @@ describe('listener', () => {
             snippets: ['accidently'],
             slack_channel: 'my-channel'
           }
-        ]);
-        expect(getBot().say).toHaveBeenCalledTimes(2);
-        expect(getBot().say).toHaveBeenNthCalledWith(1, {
-          attachments: [
-            {
-              color: undefined,
-              mrkdwn_in: ['text'],
-              text: "It looks like you accidently spelled 'commit' with two 't's.",
-              title: '#2: Spelling error in the README file',
-              title_link: 'https://github.com/Codertocat/Hello-World/issues/2'
-            }
-          ],
-          channel: 'some-channel',
-          text: 'You were mentioned in an issue for *Codertocat/Hello-World* by *Codertocat*'
-        });
-        expect(getBot().say).toHaveBeenNthCalledWith(2, {
-          attachments: [
-            {
-              color: undefined,
-              mrkdwn_in: ['text'],
-              text: "It looks like you accidently spelled 'commit' with two 't's.",
-              title: '#2: Spelling error in the README file',
-              title_link: 'https://github.com/Codertocat/Hello-World/issues/2'
-            }
-          ],
-          channel: 'some-other-channel',
-          text: 'You were mentioned in an issue for *Codertocat/Hello-World* by *Codertocat*'
-        });
+        ])
+      );
+      expectPostMessage({
+        token: process.env.SLACK_ACCESS_TOKEN,
+        text: 'You were mentioned in an issue for *Codertocat/Hello-World* by *Codertocat*',
+        attachments: [
+          {
+            title: '#2: Spelling error in the README file',
+            title_link: 'https://github.com/Codertocat/Hello-World/issues/2',
+            text: "It looks like you accidently spelled 'commit' with two 't's.",
+            color: undefined,
+            mrkdwn_in: ['text']
+          }
+        ],
+        channel: 'some-channel'
       });
+      expectPostMessage({
+        token: process.env.SLACK_ACCESS_TOKEN,
+        text: 'You were mentioned in an issue for *Codertocat/Hello-World* by *Codertocat*',
+        attachments: [
+          {
+            title: '#2: Spelling error in the README file',
+            title_link: 'https://github.com/Codertocat/Hello-World/issues/2',
+            text: "It looks like you accidently spelled 'commit' with two 't's.",
+            color: undefined,
+            mrkdwn_in: ['text']
+          }
+        ],
+        channel: 'some-other-channel'
+      });
+      await getWebhooksHandler(issues.name, editedIssueExample);
+      expect(datastore.get).toHaveBeenCalledTimes(1);
+      slackScope.isDone();
+    });
+  });
+
+  describe('issue comment', () => {
+    const issueComments = find(webhookDefinitions, ['name', 'issue_comment']);
+    const newIssueCommentExample: any = issueComments.examples[0];
+
+    beforeEach(() => {
+      // sanity check
+      expect(issueComments.name).toEqual('issue_comment');
+      expect(newIssueCommentExample.action).toEqual('created');
     });
 
-    describe('issue comment', () => {
-      const issueComments = find(webhookDefinitions, ['name', 'issue_comment']);
-      const newIssueCommentExample: any = issueComments.examples[0];
+    it('should ignore bot users', async () => {
+      const copiedExample = cloneDeep(newIssueCommentExample);
+      copiedExample.sender.type = 'Bot';
+      await getWebhooksHandler(issueComments.name, copiedExample);
+      expect(datastore.get).not.toHaveBeenCalled();
+    });
 
-      beforeEach(() => {
-        // sanity check
-        expect(issueComments.name).toEqual('issue_comment');
-        expect(newIssueCommentExample.action).toEqual('created');
-      });
-
-      it('should ignore bot users', async () => {
-        const copiedExample = cloneDeep(newIssueCommentExample);
-        copiedExample.sender.type = 'Bot';
-        await getWebhooksHandler()({ name: issueComments.name, payload: copiedExample });
-        expect(controller.storage.users.all).not.toHaveBeenCalled();
-      });
-
-      it('should handle new issue comments', async () => {
-        await getWebhooksHandler()({ name: issueComments.name, payload: newIssueCommentExample });
-        expect(controller.storage.users.all).toHaveBeenCalledTimes(1);
-        await controller.storage.users.all.mock.calls[0][0](null, [
+    it('should handle new issue comments', async () => {
+      (<jest.Mock>datastore.get).mockReturnValue(
+        Promise.resolve([
           {
             github_user: 'not-codertocat',
             snippets: ['You are totally right'],
@@ -161,53 +177,57 @@ describe('listener', () => {
             snippets: ['totally'],
             slack_channel: 'my-channel'
           }
-        ]);
-        expect(getBot().say).toHaveBeenCalledTimes(2);
-        expect(getBot().say).toHaveBeenNthCalledWith(1, {
-          attachments: [
-            {
-              color: undefined,
-              mrkdwn_in: ['text'],
-              text: "You are totally right! I'll get this fixed right away.",
-              title: '#2: Spelling error in the README file',
-              title_link: 'https://github.com/Codertocat/Hello-World/issues/2#issuecomment-393304133'
-            }
-          ],
-          channel: 'some-channel',
-          text: 'You were mentioned in a comment on *Codertocat/Hello-World* by *Codertocat*'
-        });
-        expect(getBot().say).toHaveBeenNthCalledWith(2, {
-          attachments: [
-            {
-              color: undefined,
-              mrkdwn_in: ['text'],
-              text: "You are totally right! I'll get this fixed right away.",
-              title: '#2: Spelling error in the README file',
-              title_link: 'https://github.com/Codertocat/Hello-World/issues/2#issuecomment-393304133'
-            }
-          ],
-          channel: 'some-other-channel',
-          text: 'You were mentioned in a comment on *Codertocat/Hello-World* by *Codertocat*'
-        });
+        ])
+      );
+      expectPostMessage({
+        token: process.env.SLACK_ACCESS_TOKEN,
+        text: 'You were mentioned in a comment on *Codertocat/Hello-World* by *Codertocat*',
+        attachments: [
+          {
+            title: '#2: Spelling error in the README file',
+            title_link: 'https://github.com/Codertocat/Hello-World/issues/2#issuecomment-393304133',
+            text: "You are totally right! I'll get this fixed right away.",
+            color: undefined,
+            mrkdwn_in: ['text']
+          }
+        ],
+        channel: 'some-channel'
       });
+      expectPostMessage({
+        token: process.env.SLACK_ACCESS_TOKEN,
+        text: 'You were mentioned in a comment on *Codertocat/Hello-World* by *Codertocat*',
+        attachments: [
+          {
+            title: '#2: Spelling error in the README file',
+            title_link: 'https://github.com/Codertocat/Hello-World/issues/2#issuecomment-393304133',
+            text: "You are totally right! I'll get this fixed right away.",
+            color: undefined,
+            mrkdwn_in: ['text']
+          }
+        ],
+        channel: 'some-other-channel'
+      });
+      await getWebhooksHandler(issueComments.name, newIssueCommentExample);
+      expect(datastore.get).toHaveBeenCalledTimes(1);
+      slackScope.isDone();
+    });
+  });
+
+  describe('status', () => {
+    const status = find(webhookDefinitions, ['name', 'status']);
+    const successExample: any = status.examples[0];
+
+    beforeEach(() => {
+      // sanity check
+      expect(status.name).toEqual('status');
+      expect(successExample.state).toEqual('success');
     });
 
-    describe('status', () => {
-      const status = find(webhookDefinitions, ['name', 'status']);
-      const successExample: any = status.examples[0];
-
-      beforeEach(() => {
-        // sanity check
-        expect(status.name).toEqual('status');
-        expect(successExample.state).toEqual('success');
-      });
-
-      it('should ignore pending status', async () => {
-        const copiedExample = cloneDeep(successExample);
-        copiedExample.state = 'pending';
-        await getWebhooksHandler()({ name: status.name, payload: copiedExample });
-        expect(getGithub().search.issues).not.toHaveBeenCalled();
-      });
+    it('should ignore pending status', async () => {
+      const copiedExample = cloneDeep(successExample);
+      copiedExample.state = 'pending';
+      await getWebhooksHandler(status.name, copiedExample);
+      githubScope.isDone();
     });
   });
 });

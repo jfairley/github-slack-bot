@@ -1,3 +1,4 @@
+import { Datastore } from '@google-cloud/datastore';
 import { ChatPostEphemeralArguments } from '@slack/web-api';
 import * as crypto from 'crypto';
 import * as moment from 'moment';
@@ -6,8 +7,7 @@ import * as randomstring from 'randomstring';
 import { slack } from '..';
 import { configureExistingTeamPayload, configureNewTeamPayload } from '../src/functions/slack/configure';
 import { User } from '../src/models';
-import { isVerified } from '../src/verifySignature';
-import { Datastore } from '@google-cloud/datastore';
+import { isSlackVerified } from '../src/verifySignature';
 
 describe('slack function', () => {
   let githubToken: string;
@@ -24,7 +24,7 @@ describe('slack function', () => {
   let slackScope: nock.Scope;
 
   function generateSlackSignature(): string {
-    const version = '1';
+    const version = 'v0';
     const timestamp = req.headers['x-slack-request-timestamp'];
     const hmac = crypto.createHmac('sha256', slackSigningSecret);
     const hash = hmac.update(`${version}:${timestamp}:${req.rawBody}`).digest('hex');
@@ -54,9 +54,9 @@ describe('slack function', () => {
   // initialize random variables
   beforeEach(() => {
     // environments
-    githubToken = process.env.GITHUB_TOKEN = 'github-token-123';
-    slackAccessToken = process.env.SLACK_ACCESS_TOKEN = 'slack-token-123';
-    slackSigningSecret = process.env.SLACK_SIGNING_SECRET = crypto.randomBytes(32).toString();
+    githubToken = process.env.GITHUB_TOKEN;
+    slackAccessToken = process.env.SLACK_ACCESS_TOKEN;
+    slackSigningSecret = process.env.SLACK_SIGNING_SECRET;
     // slack payload datas
     verificationToken = randomstring.generate(24);
     team = {
@@ -122,7 +122,7 @@ describe('slack function', () => {
   describe('verification', () => {
     it('should allow a valid signature', () => {
       // the default "beforeEach" should set up everything properly
-      expect(isVerified(req)).toEqual(true);
+      expect(isSlackVerified(req)).toEqual(true);
     });
 
     it('should reject request missing headers', async () => {
