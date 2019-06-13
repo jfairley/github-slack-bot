@@ -14,6 +14,7 @@ import {
   values
 } from 'lodash';
 import { github, IncomingSlackMessageBody, postEphemeral, postMessage } from '../../api';
+import { logger } from '../../logger';
 import { findUser, findUsers, User } from '../../models';
 import { configureUser } from './configure';
 
@@ -59,8 +60,8 @@ export const actions: Array<{
 /**
  * search for PRs for the current user
  */
-export async function listPRsForUser(message) {
-  const userId = message.user;
+export async function listPRsForUser(message: IncomingSlackMessageBody) {
+  const userId = message.user_id;
   const user = await findUser(userId);
   if (!user) {
     return configureUser(message);
@@ -86,6 +87,7 @@ export async function listPRs(message: IncomingSlackMessageBody, team: string) {
       .map(issuesForSameRepo =>
         Promise.all(
           issuesForSameRepo.map(issue => {
+            logger.debug(`Handling issue for 'list' ${JSON.stringify(issue, null, 2)}`);
             if (issue.pull_request) {
               return github.pulls
                 .get({
@@ -105,6 +107,7 @@ export async function listPRs(message: IncomingSlackMessageBody, team: string) {
       )
       .map(async issuesPromise => {
         const group = await issuesPromise;
+        logger.debug(`Handling issue group for 'list' ${JSON.stringify(group, null, 2)}`);
         return postMessage(message, {
           text: `*${group[0].repository.name}*`,
           attachments: group.map(resp => {
@@ -173,8 +176,8 @@ export async function listTeams(message: IncomingSlackMessageBody) {
 /**
  * show details for the current user
  */
-export async function teamDetailsForUser(message) {
-  const userId = message.user;
+export async function teamDetailsForUser(message: IncomingSlackMessageBody) {
+  const userId = message.user_id;
   const user = await findUser(userId);
   if (!user) {
     return configureUser(message);
@@ -186,7 +189,7 @@ export async function teamDetailsForUser(message) {
 /**
  * show details for a list of snippets
  */
-export async function teamDetails(message, team) {
+export async function teamDetails(message: IncomingSlackMessageBody, team: string) {
   const data = await findUser(team);
   if (!data) {
     return teamDoesNotExist(message, team);
