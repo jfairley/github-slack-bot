@@ -85,7 +85,6 @@ Turn on the following features for your app:
 
 - Incoming Webhooks
     - Just turn it on.
-    - TODO: try turning it off.
 - Interactive Components
     - Under `Request URL` is where you'll register the hook URL for your cloud function. Insert the **slack** function URL copied from earlier.
 - Slash Commands
