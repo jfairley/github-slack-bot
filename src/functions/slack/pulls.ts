@@ -257,13 +257,14 @@ function groupByRepositoryUrl(pulls: IssuesListForOrgResponseItem[]): Dictionary
  * @returns {Array}
  */
 function filterUninterestingLinks(body: IssuesListForOrgResponseItem[], snippets: string[]) {
+  logger.debug(`filter out uninteresting links from ${JSON.stringify(body, null, 2)} with ${snippets}`);
   return body.filter(resp =>
     snippets.some(
       snippet =>
         -1 < resp.title.indexOf(snippet) ||
         -1 < resp.body.indexOf(snippet) ||
-        isEqual(resp.assignee.login, trim(snippet, ' @')) ||
-        isEqual(resp.user.login, trim(snippet, ' @'))
+        isEqual(get(resp, 'assignee.login'), trim(snippet, ' @')) ||
+        isEqual(get(resp, 'user.login'), trim(snippet, ' @'))
     )
   );
 }
