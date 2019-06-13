@@ -164,7 +164,7 @@ export async function listTeams(message: IncomingSlackMessageBody) {
   const users = await findUsers();
   return postMessage(
     message,
-    `Configured teams:\n${Array.from(users.values())
+    `Configured teams:\n${users
       .map(team => (/^U\w{8}$/.test(team.name) ? ` - ${team.name} (<@${team.name}>)` : ` - ${team.name}`))
       .join('\n')}`
   );
