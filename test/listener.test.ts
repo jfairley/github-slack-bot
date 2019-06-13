@@ -145,7 +145,7 @@ describe('github webhooks', () => {
         channel: 'some-other-channel'
       });
       await getWebhooksHandler(issues.name, editedIssueExample);
-      expect(datastore.get).toHaveBeenCalledTimes(1);
+      expect(datastore.runQuery).toHaveBeenCalledTimes(1);
       slackScope.isDone();
     });
   });
@@ -214,7 +214,7 @@ describe('github webhooks', () => {
         channel: 'some-other-channel'
       });
       await getWebhooksHandler(issueComments.name, newIssueCommentExample);
-      expect(datastore.get).toHaveBeenCalledTimes(1);
+      expect(datastore.runQuery).toHaveBeenCalledTimes(1);
       slackScope.isDone();
     });
   });

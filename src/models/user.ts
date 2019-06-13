@@ -35,7 +35,7 @@ export async function findUser(name: string): Promise<User | undefined> {
 }
 
 export async function findUsers(): Promise<User[]> {
-  return datastore.get(datastore.key(kind));
+  return (await datastore.runQuery(datastore.createQuery(kind)))[0];
 }
 
 export async function updateUser(user: User) {
