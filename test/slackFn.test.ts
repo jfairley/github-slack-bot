@@ -109,7 +109,6 @@ describe('slack function', () => {
       }
     };
     res = {
-      sendStatus: jest.fn().mockReturnThis(),
       status: jest.fn().mockReturnThis(),
       send: jest.fn().mockReturnThis(),
       end: jest.fn().mockReturnThis()
@@ -183,7 +182,8 @@ describe('slack function', () => {
         user: user.id
       });
       await slack(req, res);
-      expect(res.sendStatus).toHaveBeenCalledWith(202);
+      expect(res.status).toHaveBeenCalledWith(202);
+      expect(res.send).toHaveBeenCalled();
       slackScope.isDone();
     });
   });
@@ -197,7 +197,8 @@ describe('slack function', () => {
         user: user.id
       });
       await slack(req, res);
-      expect(res.sendStatus).toHaveBeenCalledWith(202);
+      expect(res.status).toHaveBeenCalledWith(202);
+      expect(res.send).toHaveBeenCalled();
       slackScope.isDone();
     });
 
@@ -214,7 +215,8 @@ describe('slack function', () => {
         user: user.id
       });
       await slack(req, res);
-      expect(res.sendStatus).toHaveBeenCalledWith(202);
+      expect(res.status).toHaveBeenCalledWith(202);
+      expect(res.send).toHaveBeenCalled();
       slackScope.isDone();
     });
   });

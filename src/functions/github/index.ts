@@ -59,7 +59,7 @@ export default async function githubWebhookFn(req: Request, res: Response) {
     }
 
     // ack to github
-    res.sendStatus(202);
+    res.status(202).send();
 
     // handle codes
     const name = req.headers['x-github-event'];

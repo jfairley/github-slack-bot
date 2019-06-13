@@ -50,7 +50,7 @@ export default async function slackFn(req: Request, res: Response) {
 
     // ack to slack
     logger.debug('Ack to slack...');
-    res.sendStatus(202);
+    res.status(202).send();
 
     if (typeof message.payload === 'string') {
       // interactive message callback

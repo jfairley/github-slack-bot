@@ -30,7 +30,6 @@ describe('github webhooks', () => {
   // build request / response
   beforeEach(() => {
     res = {
-      sendStatus: jest.fn().mockReturnThis(),
       status: jest.fn().mockReturnThis(),
       send: jest.fn().mockReturnThis(),
       end: jest.fn().mockReturnThis()
