@@ -2,8 +2,6 @@ import * as crypto from 'crypto';
 import * as moment from 'moment';
 import * as timingSafeCompare from 'tsscmp';
 
-const { GITHUB_WEBHOOK_SECRET, SLACK_SIGNING_SECRET } = process.env;
-
 export function isGithubVerified(req): boolean {
   const signature: string = req.headers['x-hub-signature'];
   if (!signature) return false;
@@ -14,7 +12,7 @@ export function isGithubVerified(req): boolean {
 
   // validate the signature
   const payload = JSON.stringify(req.body);
-  const hmac = crypto.createHmac(algorithm, GITHUB_WEBHOOK_SECRET);
+  const hmac = crypto.createHmac(algorithm, process.env.GITHUB_WEBHOOK_SECRET);
   const hash = hmac.update(payload).digest('hex');
   return checksum && hash && timingSafeCompare(checksum, hash);
 }
@@ -32,7 +30,7 @@ export function isSlackVerified(req): boolean {
   const signature = req.headers['x-slack-signature'];
   if (!signature) return false;
   const [version, hash] = signature.split('=');
-  const hmac = crypto.createHmac('sha256', SLACK_SIGNING_SECRET);
+  const hmac = crypto.createHmac('sha256', process.env.SLACK_SIGNING_SECRET);
   hmac.update(`${version}:${timestamp}:${req.rawBody}`);
   return timingSafeCompare(hmac.digest('hex'), hash);
 }

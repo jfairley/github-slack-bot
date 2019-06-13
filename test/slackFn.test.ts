@@ -51,12 +51,14 @@ describe('slack function', () => {
       });
   }
 
+  beforeEach(() => jest.clearAllMocks());
+
   // initialize random variables
   beforeEach(() => {
     // environments
-    githubToken = process.env.GITHUB_TOKEN;
-    slackAccessToken = process.env.SLACK_ACCESS_TOKEN;
-    slackSigningSecret = process.env.SLACK_SIGNING_SECRET;
+    githubToken = process.env.GITHUB_TOKEN = 'github-token-123';
+    slackAccessToken = process.env.SLACK_ACCESS_TOKEN = 'slack-token-123';
+    slackSigningSecret = process.env.SLACK_SIGNING_SECRET = crypto.randomBytes(32).toString();
     // slack payload datas
     verificationToken = randomstring.generate(24);
     team = {
@@ -205,7 +207,7 @@ describe('slack function', () => {
         id: 'foo',
         name: 'my-team'
       };
-      (<jest.Mock>new Datastore().get).mockReturnValue(Promise.resolve([testUser]));
+      (new Datastore().get as jest.Mock).mockReturnValue(Promise.resolve([testUser]));
       req.body.text = 'configure my-team';
       expectPostEphemeral({
         ...configureExistingTeamPayload(testUser, false),

@@ -8,16 +8,26 @@ import * as randomstring from 'randomstring';
 import { githubWebhook } from '..';
 
 describe('github webhooks', () => {
+  let githubToken: string;
+  let githubWebhookSecret: string;
+  let slackAccessToken: string;
   let req;
   let res;
   let datastore: Datastore;
   let githubScope: nock.Scope;
   let slackScope: nock.Scope;
 
+  beforeEach(() => jest.clearAllMocks());
+
+  // initialize random variables
   beforeEach(() => {
-    jest.clearAllMocks();
+    // environments
+    githubToken = process.env.GITHUB_TOKEN = 'test-github-token';
+    githubWebhookSecret = process.env.GITHUB_WEBHOOK_SECRET = 'test-github-webhook-secret';
+    slackAccessToken = process.env.SLACK_ACCESS_TOKEN = 'test-slack-token';
   });
 
+  // build request / response
   beforeEach(() => {
     res = {
       status: jest.fn().mockReturnThis(),
@@ -37,7 +47,7 @@ describe('github webhooks', () => {
   function getWebhooksHandler(event: string, payload: object) {
     // generate signature
     const algorithm = 'sha1';
-    const hmac = crypto.createHmac(algorithm, process.env.GITHUB_WEBHOOK_SECRET);
+    const hmac = crypto.createHmac(algorithm, githubWebhookSecret);
     const hash = hmac.update(JSON.stringify(payload)).digest('hex');
     const signature = `${algorithm}=${hash}`;
 
@@ -89,7 +99,7 @@ describe('github webhooks', () => {
     });
 
     it('should handle edited issues', async () => {
-      (<jest.Mock>datastore.get).mockReturnValue(
+      (datastore.get as jest.Mock).mockReturnValue(
         Promise.resolve([
           {
             github_user: 'not-codertocat',
@@ -109,7 +119,6 @@ describe('github webhooks', () => {
         ])
       );
       expectPostMessage({
-        token: process.env.SLACK_ACCESS_TOKEN,
         text: 'You were mentioned in an issue for *Codertocat/Hello-World* by *Codertocat*',
         attachments: [
           {
@@ -123,7 +132,6 @@ describe('github webhooks', () => {
         channel: 'some-channel'
       });
       expectPostMessage({
-        token: process.env.SLACK_ACCESS_TOKEN,
         text: 'You were mentioned in an issue for *Codertocat/Hello-World* by *Codertocat*',
         attachments: [
           {
@@ -160,7 +168,7 @@ describe('github webhooks', () => {
     });
 
     it('should handle new issue comments', async () => {
-      (<jest.Mock>datastore.get).mockReturnValue(
+      (datastore.get as jest.Mock).mockReturnValue(
         Promise.resolve([
           {
             github_user: 'not-codertocat',
@@ -180,7 +188,6 @@ describe('github webhooks', () => {
         ])
       );
       expectPostMessage({
-        token: process.env.SLACK_ACCESS_TOKEN,
         text: 'You were mentioned in a comment on *Codertocat/Hello-World* by *Codertocat*',
         attachments: [
           {
@@ -194,7 +201,6 @@ describe('github webhooks', () => {
         channel: 'some-channel'
       });
       expectPostMessage({
-        token: process.env.SLACK_ACCESS_TOKEN,
         text: 'You were mentioned in a comment on *Codertocat/Hello-World* by *Codertocat*',
         attachments: [
           {
