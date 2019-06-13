@@ -57,7 +57,8 @@
   "scripts": {
     "build": "tsc",
     "commit": "commit",
-    "deploy": "gcloud functions deploy slack --env-vars-file .env.yml --runtime=nodejs8 --trigger-http",
+    "deploy:github": "tsc && gcloud functions deploy github --env-vars-file .env.yml --runtime=nodejs8 --trigger-http",
+    "deploy:slack": "tsc && gcloud functions deploy slack --env-vars-file .env.yml --runtime=nodejs8 --trigger-http",
     "fixpack": "fixpack",
     "lint": "tslint --project tsconfig.json -c tslint.json",
     "predeploy": "npm run build",

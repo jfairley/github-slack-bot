@@ -5,7 +5,7 @@ import * as crypto from 'crypto';
 import { cloneDeep, find } from 'lodash';
 import * as nock from 'nock';
 import * as randomstring from 'randomstring';
-import { githubWebhook } from '..';
+import { github } from '..';
 
 describe('github webhooks', () => {
   let githubToken: string;
@@ -58,7 +58,7 @@ describe('github webhooks', () => {
         'x-github-event': event
       }
     };
-    return githubWebhook(req, res);
+    return github(req, res);
   }
 
   function expectPostMessage(body: ChatPostMessageArguments) {
