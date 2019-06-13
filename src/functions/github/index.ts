@@ -341,7 +341,7 @@ async function checkStatus(payload: StatusWebhook) {
           postMessage(
             { channel_id: user.name },
             {
-              text: `Updated commit status on *${payload.name}* by *${payload.sender.login}*:`,
+              text: `Updated commit status on *${payload.name}*:`,
               attachments: [
                 {
                   color:
