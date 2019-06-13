@@ -81,7 +81,7 @@ async function handleAction(message: IncomingSlackMessageBody) {
   for (const action of [...actions, ...configureActions]) {
     const results = action.pattern.exec(text);
     if (results) {
-      logger.debug('Found action match');
+      logger.debug(`Found action match: ${action.pattern}`);
       return action.callback(message, results[results.length - 1]);
     }
   }
