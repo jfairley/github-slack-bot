@@ -67,6 +67,7 @@ export default async function githubWebhookFn(req: Request, res: Response) {
           case 'opened':
           case 'reopened':
           case 'edited':
+          case 'review_requested':
             logger.debug(`Notify issue for ${name}, ${payload.action}`);
             await notifyIssue(payload);
             break;
@@ -181,6 +182,8 @@ async function notifyIssue(data) {
           msg_text = `You were mentioned in a comment on *${repo}* by *${sender.login}*`;
         } else if (is_pull_request) {
           msg_text = `You were mentioned in a pull request for *${repo}* by *${sender.login}*`;
+        } else if (data.action === 'review_requested') {
+          msg_text = `*${sender.login}* requested your review on a pull request for *${repo}*`;
         } else {
           msg_text = `You were mentioned in an issue for *${repo}* by *${sender.login}*`;
         }
