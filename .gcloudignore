@@ -14,10 +14,12 @@
 .idea/
 __mocks__/
 coverage/
+docs/
 node_modules/
 reports/
 storage/
 test/
+*.md
 *.ts
 *.tsbuildinfo
 *.config.js
