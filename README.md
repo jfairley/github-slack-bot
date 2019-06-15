@@ -143,13 +143,13 @@ Fill out all of your environment variables and deploy the functions!
 
 Place the following environment variables in a `.env.yml` file at the root of your repo. 
 
-| Variables               | Description                | More Information                                         |
-|-------------------------|----------------------------|----------------------------------------------------------|
-| `GITHUB_ORG`            | github organization        |                                                          |
-| `GITHUB_TOKEN`          | github webhook token       | https://developer.github.com/webhooks/                   |
-| `GITHUB_WEBHOOK_SECRET` | github webhook secret      | https://developer.github.com/webhooks/                   |
-| `SLACK_ACCESS_TOKEN`    | token from your slack app  | https://api.slack.com/bot-users                          |
-| `SLACK_SIGNING_SECRET`  | slack api verification     | https://api.slack.com/docs/verifying-requests-from-slack |
+| Variables               | Description                | More Information                                                                          |
+|-------------------------|----------------------------|-------------------------------------------------------------------------------------------|
+| `GITHUB_ORG`            | github organization        |                                                                                           |
+| `GITHUB_TOKEN`          | github token               | https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line |
+| `GITHUB_WEBHOOK_SECRET` | github webhook secret      | https://ryanharrison.co.uk/2018/09/04/validate-github-webhook-signatures.html             |
+| `SLACK_ACCESS_TOKEN`    | token from your slack app  | https://api.slack.com/bot-users                                                           |
+| `SLACK_SIGNING_SECRET`  | slack api verification     | https://api.slack.com/docs/verifying-requests-from-slack                                  |
 
 #### Deploy
 
